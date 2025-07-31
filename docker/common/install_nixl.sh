@@ -4,7 +4,8 @@ set -ex
 GITHUB_URL="https://github.com"
 UCX_INSTALL_PATH="/usr/local/ucx/"
 CUDA_PATH="/usr/local/cuda"
-NIXL_VERSION="0.4.1"
+# Use specific commit hash that includes the dladdr fix from PR #589
+NIXL_COMMIT="53e7113a74a1d06d634b7edcf198a7274036ec67"
 NIXL_REPO="https://github.com/ai-dynamo/nixl.git"
 OLD_LD_LIBRARY_PATH=$LD_LIBRARY_PATH
 
@@ -16,8 +17,10 @@ if [ "$(uname -m)" != "amd64" ] && [ "$(uname -m)" != "x86_64" ]; then
 fi
 
 pip3 install --no-cache-dir meson ninja pybind11
-git clone --depth 1 -b ${NIXL_VERSION} ${NIXL_REPO}
+# Clone the repository and checkout the specific commit with the dladdr fix
+git clone ${NIXL_REPO}
 cd nixl
+git checkout ${NIXL_COMMIT}
 
 CUDA_SO_PATH=$(find "/usr/local" -name "libcuda.so.1" 2>/dev/null | head -n1)
 
