@@ -197,6 +197,8 @@ private:
         }
     }
 
+    static constexpr auto kContextCompletionTimeout = std::chrono::milliseconds(5000);
+
     void response() noexcept
     {
         try
@@ -241,6 +243,32 @@ private:
                         auto llmRequest = it->second.mRequest;
                         llmRequest->setRequestedBlockHashes(std::move(blockHashes));
 
+                        // NEW: Wait for context to finish if early responding
+                        if (llmRequest->hasEarlyRespondingStarted() && !llmRequest->isContextFinished())
+                        {
+                            TLLM_LOG_DEBUG("DataResponder: Waiting for context completion for request %lu",
+                                llmRequest->mRequestId);
+
+                            auto waitStart = std::chrono::steady_clock::now();
+
+                            // Wait with timeout to prevent indefinite blocking
+                            if (!llmRequest->waitForContextFinished(kContextCompletionTimeout))
+                            {
+                                TLLM_LOG_ERROR("DataResponder: Timeout waiting for context completion "
+                                    "for request %lu after %lld ms",
+                                    llmRequest->mRequestId,
+                                    static_cast<long long>(kContextCompletionTimeout.count()));
+                                // Continue anyway to avoid blocking the system
+                                // The transfer may fail but system remains responsive
+                            }
+
+                            auto waitDuration = std::chrono::steady_clock::now() - waitStart;
+                            TLLM_LOG_DEBUG("DataResponder: Context wait completed for request %lu in %lld ms",
+                                llmRequest->mRequestId,
+                                static_cast<long long>(
+                                    std::chrono::duration_cast<std::chrono::milliseconds>(waitDuration).count()));
+                        }
+
                         if (common::getEnvParallelCacheSend())
                         {
                             // TODO: Use a thread pool and check for thread safety.
@@ -272,6 +300,18 @@ private:
             TLLM_LOG_ERROR("Exception in DataResponder response: %s", err.what());
             for (auto& it : mReadyResponses)
             {
+                try
+                {
+                    // Signal any waiting threads before setting exception
+                    if (it.second.mRequest->hasEarlyRespondingStarted())
+                    {
+                        it.second.mRequest->signalContextFinished();
+                    }
+                }
+                catch (...)
+                {
+                } // Ignore errors during cleanup
+
                 it.second.mPromise.set_exception(std::current_exception());
             }
         }
