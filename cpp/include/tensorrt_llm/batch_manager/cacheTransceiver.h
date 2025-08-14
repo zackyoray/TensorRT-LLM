@@ -93,6 +93,9 @@ public:
 
     void respondAndSendAsync(LlmRequest* llmRequest) override;
 
+    /// @brief Start early responding before GPU computation completes
+    void respondAndSendAsyncEarly(LlmRequest* llmRequest);
+
     void respondAndSendLayerWise(
         RequestVector const& requests, std::shared_ptr<ContextProgress> const& progress) override;
 
@@ -109,6 +112,9 @@ private:
     void initializeCommState();
 
     void setContextState(LlmRequest* llmRequest);
+
+    /// @brief Check if early responding is enabled via configuration
+    bool isEarlyRespondingEnabled() const;
 
     std::unique_ptr<DataResponder> mDataResponder;
     std::unique_ptr<DataRequester> mDataRequester;
