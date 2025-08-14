@@ -1,0 +1,39 @@
+---
+description: "Guidelines for managing concurrency in Spring Boot. Addresses potential issues flagged by SonarQube related to thread safety and performance."
+globs: ["src/main/java/**/*.java"]
+alwaysApply: false
+---
+
+# Java Spring Boot Concurrency Guidelines
+
+- **Spring `@Async`:** For asynchronous method execution, leverage Spring's `@Async` annotation. Ensure proper `@EnableAsync` configuration.
+- **`CompletableFuture`:** Prefer `CompletableFuture` for non-blocking asynchronous operations, chaining, and error handling.
+- **Thread Safety:** Ensure all Spring beans that maintain state are thread-safe. If a bean needs mutable state, consider `@Scope("prototype")` or explicit synchronization. (SonarQube: Detects potential race conditions, unsynchronized access to shared mutable data).
+- **Shared Mutable State:** Minimize shared mutable state. If necessary, protect it using `java.util.concurrent` primitives (e.g., `ConcurrentHashMap`, `AtomicLong`) or explicit locks (`synchronized`, `ReentrantLock`).
+- **Avoid Deadlocks:** When using multiple locks, ensure consistent lock acquisition order to prevent deadlocks. (SonarQube: May detect potential deadlocks).
+- **ThreadPools:** For custom asynchronous tasks, use Spring's `ThreadPoolTaskExecutor` for managed thread pools rather than creating raw `ExecutorService` instances.
+
+<rule>
+  <name>java_spring_boot_concurrency_guidelines</name>
+  <description>Guidelines for managing concurrency in Spring Boot.</description>
+  <requirements>
+    <requirement priority="high">
+      <description>Leverage Spring's @Async for asynchronous method execution with proper configuration.</description>
+    </requirement>
+    <requirement priority="high">
+      <description>Prefer CompletableFuture for non-blocking asynchronous operations, chaining, and error handling.</description>
+    </requirement>
+    <requirement priority="critical">
+      <description>Ensure all Spring beans maintaining state are thread-safe, considering @Scope("prototype") or explicit synchronization.</description>
+    </requirement>
+    <requirement priority="high">
+      <description>Minimize shared mutable state; protect it using java.util.concurrent primitives or explicit locks if necessary.</description>
+    </requirement>
+    <requirement priority="high">
+      <description>When using multiple locks, ensure consistent lock acquisition order to prevent deadlocks.</description>
+    </requirement>
+    <requirement priority="medium">
+      <description>Use Spring's ThreadPoolTaskExecutor for managed thread pools for custom asynchronous tasks.</description>
+    </requirement>
+  </requirements>
+</rule>

@@ -1,0 +1,576 @@
+---
+description: Openshift best practices and guidelines
+globs:
+- '*.py'
+- '*.js'
+- '*.ts'
+- '*.jsx'
+- '*.tsx'
+alwaysApply: false
+---
+
+# OpenShift Development and Operations Best Practices
+
+This document provides OpenShift-specific guidelines that extend beyond standard Kubernetes practices, covering OpenShift-unique features, security models, and deployment patterns.
+
+## 1. OpenShift-Specific Components and Features
+
+### 1.1 Core OpenShift Resources
+
+**Routes vs Ingress:**
+```yaml
+# OpenShift Route (preferred over Ingress in OpenShift)
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: my-app-route
+spec:
+  host: myapp.apps.cluster.example.com
+  to:
+    kind: Service
+    name: my-app-service
+  tls:
+    termination: edge
+    insecureEdgeTerminationPolicy: Redirect
+```
+
+**DeploymentConfig vs Deployment:**
+```yaml
+# OpenShift DeploymentConfig (legacy, prefer Deployment)
+apiVersion: apps.openshift.io/v1
+kind: DeploymentConfig
+metadata:
+  name: my-app-dc
+spec:
+  replicas: 3
+  triggers:
+    - type: ConfigChange
+    - type: ImageChange
+      imageChangeParams:
+        automatic: true
+        containerNames:
+          - my-app
+        from:
+          kind: ImageStreamTag
+          name: my-app:latest
+```
+
+**BuildConfig for Source-to-Image (S2I):**
+```yaml
+# Source-to-Image BuildConfig
+apiVersion: build.openshift.io/v1
+kind: BuildConfig
+metadata:
+  name: my-app-build
+spec:
+  source:
+    git:
+      uri: https://github.com/user/my-app.git
+      ref: main
+    type: Git
+  strategy:
+    sourceStrategy:
+      from:
+        kind: ImageStreamTag
+        name: nodejs:16-ubi8
+    type: Source
+  output:
+    to:
+      kind: ImageStreamTag
+      name: my-app:latest
+```
+
+### 1.2 ImageStreams and ImageStreamTags
+
+**ImageStream Management:**
+```yaml
+# ImageStream for managing container images
+apiVersion: image.openshift.io/v1
+kind: ImageStream
+metadata:
+  name: my-app
+spec:
+  lookupPolicy:
+    local: false
+  tags:
+    - name: latest
+      from:
+        kind: DockerImage
+        name: registry.access.redhat.com/ubi8/nodejs-16:latest
+      importPolicy:
+        scheduled: true
+      referencePolicy:
+        type: Source
+```
+
+**Best Practices:**
+- Use ImageStreams to abstract image references
+- Enable automatic imports for base images
+- Tag images appropriately (dev, test, prod)
+- Use `lookupPolicy.local: true` for faster pod startup
+
+### 1.3 OpenShift Templates
+
+**Template Structure:**
+```yaml
+apiVersion: template.openshift.io/v1
+kind: Template
+metadata:
+  name: nodejs-app-template
+objects:
+  - apiVersion: apps/v1
+    kind: Deployment
+    metadata:
+      name: ${APP_NAME}
+    spec:
+      replicas: ${{REPLICA_COUNT}}
+      template:
+        spec:
+          containers:
+            - name: ${APP_NAME}
+              image: ${IMAGE_NAME}:${IMAGE_TAG}
+              env:
+                - name: NODE_ENV
+                  value: ${NODE_ENV}
+parameters:
+  - name: APP_NAME
+    description: Name of the application
+    required: true
+  - name: REPLICA_COUNT
+    description: Number of replicas
+    value: "1"
+  - name: IMAGE_NAME
+    description: Container image name
+    required: true
+  - name: IMAGE_TAG
+    description: Container image tag
+    value: "latest"
+  - name: NODE_ENV
+    description: Node.js environment
+    value: "production"
+```
+
+## 2. Security Context Constraints (SCCs)
+
+### 2.1 Understanding SCCs
+
+**Default SCCs:**
+- `restricted` - Most restrictive (default for most users)
+- `nonroot` - Allows non-root user access
+- `anyuid` - Allows any user ID
+- `privileged` - Full access (use sparingly)
+
+**Custom SCC Example:**
+```yaml
+apiVersion: security.openshift.io/v1
+kind: SecurityContextConstraints
+metadata:
+  name: my-app-scc
+allowHostDirVolumePlugin: false
+allowHostIPC: false
+allowHostNetwork: false
+allowHostPID: false
+allowHostPorts: false
+allowPrivilegedContainer: false
+allowedCapabilities: []
+defaultAddCapabilities: []
+fsGroup:
+  type: MustRunAs
+  ranges:
+    - min: 1
+      max: 65535
+runAsUser:
+  type: MustRunAsRange
+  uidRangeMin: 1000
+  uidRangeMax: 2000
+seLinuxContext:
+  type: MustRunAs
+supplementalGroups:
+  type: MustRunAs
+  ranges:
+    - min: 1
+      max: 65535
+volumes:
+  - configMap
+  - downwardAPI
+  - emptyDir
+  - persistentVolumeClaim
+  - projected
+  - secret
+```
+
+**Assigning SCCs:**
+```bash
+# Add SCC to service account
+oc adm policy add-scc-to-user my-app-scc system:serviceaccount:my-namespace:my-service-account
+
+# Add SCC to user
+oc adm policy add-scc-to-user anyuid my-user
+
+# Remove SCC from user
+oc adm policy remove-scc-from-user anyuid my-user
+```
+
+### 2.2 SCC Best Practices
+
+- **Principle of Least Privilege**: Use the most restrictive SCC possible
+- **Custom SCCs**: Create custom SCCs rather than using `anyuid` or `privileged`
+- **Service Account Binding**: Bind SCCs to service accounts, not users
+- **Regular Review**: Regularly audit SCC assignments
+- **Documentation**: Document why specific SCCs are needed
+
+## 3. OpenShift CLI (oc) Commands
+
+### 3.1 Essential oc Commands
+
+**Project Management:**
+```bash
+# Create new project
+oc new-project my-project --description="My Project" --display-name="My Project"
+
+# Switch to project
+oc project my-project
+
+# Get current project
+oc project
+
+# List all projects
+oc get projects
+```
+
+**Application Deployment:**
+```bash
+# New app from source code
+oc new-app https://github.com/user/my-app.git --name=my-app
+
+# New app from Docker image
+oc new-app --docker-image=nginx:latest --name=nginx
+
+# New app from template
+oc new-app my-template -p PARAM1=value1 -p PARAM2=value2
+
+# Process template without creating objects
+oc process my-template -p PARAM1=value1 --dry-run -o yaml
+```
+
+**Build and Deploy:**
+```bash
+# Start build
+oc start-build my-app
+
+# Follow build logs
+oc logs -f bc/my-app
+
+# Trigger deployment
+oc rollout latest dc/my-app
+
+# Check rollout status
+oc rollout status dc/my-app
+
+# Rollback deployment
+oc rollback dc/my-app
+```
+
+### 3.2 Advanced oc Operations
+
+**Resource Management:**
+```bash
+# Scale application
+oc scale dc/my-app --replicas=3
+
+# Set environment variables
+oc set env dc/my-app NODE_ENV=production
+
+# Set resource limits
+oc set resources dc/my-app --limits=cpu=500m,memory=512Mi --requests=cpu=100m,memory=128Mi
+
+# Add volume
+oc set volume dc/my-app --add --name=data --type=pvc --claim-name=my-pvc --mount-path=/data
+```
+
+**Debugging:**
+```bash
+# Debug pod
+oc debug pod/my-app-pod
+
+# Remote shell into pod
+oc rsh pod/my-app-pod
+
+# Port forwarding
+oc port-forward pod/my-app-pod 8080:8080
+
+# Copy files
+oc cp my-file.txt my-app-pod:/tmp/
+oc cp my-app-pod:/tmp/my-file.txt ./my-file.txt
+```
+
+## 4. OpenShift Operators and OperatorHub
+
+### 4.1 Installing Operators
+
+**From OperatorHub:**
+```yaml
+# Subscription to install operator
+apiVersion: operators.coreos.com/v1alpha1
+kind: Subscription
+metadata:
+  name: my-operator
+  namespace: my-namespace
+spec:
+  channel: stable
+  name: my-operator
+  source: community-operators
+  sourceNamespace: openshift-marketplace
+```
+
+**Custom Operator:**
+```yaml
+# Custom Resource Definition
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: myapps.example.com
+spec:
+  group: example.com
+  versions:
+    - name: v1
+      served: true
+      storage: true
+      schema:
+        openAPIV3Schema:
+          type: object
+          properties:
+            spec:
+              type: object
+              properties:
+                size:
+                  type: integer
+                image:
+                  type: string
+  scope: Namespaced
+  names:
+    plural: myapps
+    singular: myapp
+    kind: MyApp
+```
+
+### 4.2 Operator Best Practices
+
+- **Use OperatorHub**: Prefer operators from OperatorHub when available
+- **Namespace Scoping**: Use namespace-scoped operators when possible
+- **Version Management**: Pin operator versions in production
+- **Monitoring**: Monitor operator health and performance
+- **Backup**: Backup custom resources and operator configurations
+
+## 5. OpenShift Networking
+
+### 5.1 Network Policies
+
+**Default Deny Policy:**
+```yaml
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: default-deny-all
+spec:
+  podSelector: {}
+  policyTypes:
+    - Ingress
+    - Egress
+```
+
+**Allow Specific Traffic:**
+```yaml
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-frontend-to-backend
+spec:
+  podSelector:
+    matchLabels:
+      app: backend
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app: frontend
+      ports:
+        - protocol: TCP
+          port: 8080
+```
+
+### 5.2 OpenShift SDN
+
+**Network Configuration:**
+```bash
+# Check network configuration
+oc get network.config.openshift.io cluster -o yaml
+
+# Get cluster network
+oc get clusternetwork
+
+# Check node subnets
+oc get hostsubnets
+```
+
+## 6. OpenShift Storage
+
+### 6.1 Storage Classes
+
+**Dynamic Provisioning:**
+```yaml
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: fast-ssd
+provisioner: kubernetes.io/aws-ebs
+parameters:
+  type: gp2
+  fsType: ext4
+allowVolumeExpansion: true
+reclaimPolicy: Delete
+```
+
+### 6.2 Persistent Volume Claims
+
+**PVC with Storage Class:**
+```yaml
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: my-app-data
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 10Gi
+  storageClassName: fast-ssd
+```
+
+## 7. OpenShift Monitoring and Logging
+
+### 7.1 Built-in Monitoring
+
+**ServiceMonitor for Prometheus:**
+```yaml
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: my-app-metrics
+spec:
+  selector:
+    matchLabels:
+      app: my-app
+  endpoints:
+    - port: metrics
+      interval: 30s
+      path: /metrics
+```
+
+**PrometheusRule for Alerts:**
+```yaml
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: my-app-alerts
+spec:
+  groups:
+    - name: my-app.rules
+      rules:
+        - alert: HighErrorRate
+          expr: rate(http_requests_total{status=~"5.."}[5m]) > 0.1
+          labels:
+            severity: warning
+          annotations:
+            summary: High error rate detected
+```
+
+### 7.2 Cluster Logging
+
+**Log Collection:**
+```bash
+# View logs from multiple containers
+oc logs -f deployment/my-app --all-containers=true
+
+# View logs with timestamps
+oc logs deployment/my-app --timestamps=true
+
+# View previous container logs
+oc logs deployment/my-app --previous=true
+```
+
+## 8. OpenShift CI/CD with Pipelines
+
+### 8.1 Tekton Pipelines
+
+**Pipeline Definition:**
+```yaml
+apiVersion: tekton.dev/v1beta1
+kind: Pipeline
+metadata:
+  name: build-and-deploy
+spec:
+  params:
+    - name: git-url
+      type: string
+    - name: image-name
+      type: string
+  tasks:
+    - name: git-clone
+      taskRef:
+        name: git-clone
+      params:
+        - name: url
+          value: $(params.git-url)
+    - name: build-image
+      taskRef:
+        name: buildah
+      runAfter:
+        - git-clone
+      params:
+        - name: IMAGE
+          value: $(params.image-name)
+```
+
+**PipelineRun:**
+```yaml
+apiVersion: tekton.dev/v1beta1
+kind: PipelineRun
+metadata:
+  name: build-and-deploy-run
+spec:
+  pipelineRef:
+    name: build-and-deploy
+  params:
+    - name: git-url
+      value: https://github.com/user/my-app.git
+    - name: image-name
+      value: my-registry/my-app:latest
+```
+
+## Best Practices Summary
+
+### OpenShift-Specific Guidelines
+
+1. **Use Routes over Ingress** for external traffic management
+2. **Prefer Deployments over DeploymentConfigs** for new applications
+3. **Leverage ImageStreams** for image lifecycle management
+4. **Apply Least Privilege** with custom SCCs
+5. **Use oc CLI** for OpenShift-specific operations
+6. **Monitor with built-in tools** (Prometheus, Grafana, AlertManager)
+7. **Implement CI/CD** with OpenShift Pipelines (Tekton)
+8. **Plan for multi-tenancy** with proper project isolation
+
+### Migration from Kubernetes
+
+- **Routes**: Replace Ingress resources with OpenShift Routes
+- **Security**: Understand SCC requirements vs Pod Security Policies
+- **Storage**: Verify storage class compatibility
+- **Networking**: Test network policies with OpenShift SDN
+- **Monitoring**: Adapt monitoring to OpenShift's built-in stack
+- **CLI**: Learn oc commands that extend kubectl functionality
+
+By following these OpenShift-specific practices alongside standard Kubernetes guidelines, you'll effectively leverage OpenShift's enhanced capabilities while maintaining compatibility with the broader Kubernetes ecosystem.

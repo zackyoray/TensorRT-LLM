@@ -1,0 +1,88 @@
+---
+alwaysApply: false
+description: Styled-components rules for CSS-in-JS styling with component-scoped styles
+  and dynamic theming.
+globs:
+- '*.js,*.jsx,*.ts,*.tsx'
+---
+
+- Use styled-components for component-scoped CSS with JavaScript template literals.
+- Implement proper theming with ThemeProvider for consistent design systems.
+- Use props-based styling for dynamic and conditional component appearances.
+- Create reusable styled components with proper composition and inheritance.
+- Implement responsive design with theme breakpoints and media query helpers.
+- Use styled-components' CSS helper for complex styles and animations.
+- Apply proper naming conventions for styled components and theme variables.
+- Optimize performance with styled-components' shouldForwardProp for prop filtering.
+- Use styled-components' attrs helper for setting default props and attributes.
+- Implement proper TypeScript integration with styled-components for type safety.
+
+# Styled Components Best Practices
+
+
+## Overview
+
+Styled-components rules for CSS-in-JS styling with component-scoped styles and dynamic theming.
+
+
+## Core Concepts
+
+### Key Features
+- Feature 1: Description of what this feature does
+- Feature 2: How this improves workflow
+- Feature 3: Integration capabilities
+- Feature 4: Performance benefits
+
+### Common Use Cases
+1. **Use Case 1**: When you need to accomplish X
+2. **Use Case 2**: For scenarios requiring Y
+3. **Use Case 3**: To optimize Z processes
+
+### Best Practices
+- Always follow the principle of least privilege
+- Keep configurations version controlled
+- Monitor performance metrics
+- Implement proper error handling
+- Use consistent naming conventions
+
+## Advanced Topics
+
+### Performance Optimization
+
+When working with Styled Components, consider these optimization strategies:
+- Cache frequently accessed data
+- Use batch operations where possible
+- Implement connection pooling
+- Monitor resource usage
+- Profile code to identify bottlenecks
+
+### Troubleshooting Guide
+
+Common issues and solutions:
+
+1. **Issue**: Configuration not loading
+   **Solution**: Check file paths and permissions
+
+2. **Issue**: Performance degradation
+   **Solution**: Review logs and increase resource limits
+
+3. **Issue**: Integration failures
+   **Solution**: Verify API versions and compatibility
+
+### Additional Resources
+
+- [Official Documentation](#)
+- [Community Forum](#)
+- [GitHub Repository](#)
+- [Tutorial Videos](#)
+- [Best Practices Guide](#)
+
+### Contributing
+
+Contributions are welcome! Please:
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Submit a pull request
+
+For more details, see CONTRIBUTING.md

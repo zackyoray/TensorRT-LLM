@@ -1,0 +1,88 @@
+---
+alwaysApply: false
+description: Scikit-learn rules for machine learning model development, training,
+  and evaluation in Python.
+globs:
+- '*.py'
+---
+
+- Use scikit-learn for consistent machine learning workflow and model development.
+- Follow proper data preprocessing with transformers and pipelines.
+- Implement cross-validation for robust model evaluation and selection.
+- Use proper train/validation/test splits to avoid data leakage.
+- Apply feature scaling and normalization appropriately for different algorithms.
+- Use pipelines to ensure consistent preprocessing in training and inference.
+- Handle categorical variables with proper encoding techniques.
+- Implement proper hyperparameter tuning with GridSearchCV or RandomizedSearchCV.
+- Use appropriate evaluation metrics for different types of machine learning problems.
+- Save and load models properly with joblib or pickle for deployment.
+
+# Scikit Learn Best Practices
+
+
+## Overview
+
+Scikit-learn rules for machine learning model development, training, and evaluation in Python.
+
+
+## Core Concepts
+
+### Key Features
+- Feature 1: Description of what this feature does
+- Feature 2: How this improves workflow
+- Feature 3: Integration capabilities
+- Feature 4: Performance benefits
+
+### Common Use Cases
+1. **Use Case 1**: When you need to accomplish X
+2. **Use Case 2**: For scenarios requiring Y
+3. **Use Case 3**: To optimize Z processes
+
+### Best Practices
+- Always follow the principle of least privilege
+- Keep configurations version controlled
+- Monitor performance metrics
+- Implement proper error handling
+- Use consistent naming conventions
+
+## Advanced Topics
+
+### Performance Optimization
+
+When working with Scikit Learn, consider these optimization strategies:
+- Cache frequently accessed data
+- Use batch operations where possible
+- Implement connection pooling
+- Monitor resource usage
+- Profile code to identify bottlenecks
+
+### Troubleshooting Guide
+
+Common issues and solutions:
+
+1. **Issue**: Configuration not loading
+   **Solution**: Check file paths and permissions
+
+2. **Issue**: Performance degradation
+   **Solution**: Review logs and increase resource limits
+
+3. **Issue**: Integration failures
+   **Solution**: Verify API versions and compatibility
+
+### Additional Resources
+
+- [Official Documentation](#)
+- [Community Forum](#)
+- [GitHub Repository](#)
+- [Tutorial Videos](#)
+- [Best Practices Guide](#)
+
+### Contributing
+
+Contributions are welcome! Please:
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Submit a pull request
+
+For more details, see CONTRIBUTING.md

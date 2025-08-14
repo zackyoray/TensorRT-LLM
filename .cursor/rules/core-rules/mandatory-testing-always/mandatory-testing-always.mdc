@@ -1,0 +1,143 @@
+---
+description: Enforces unit testing for all generated code across all languages and contexts
+globs: 
+alwaysApply: true
+---
+
+# Mandatory Unit Testing Rule
+
+## Critical Rules
+
+- NEVER generate code without corresponding unit tests
+- ALWAYS create tests in the same response as the implementation
+- Tests must cover happy path, edge cases, and error conditions
+- Minimum 80% code coverage target for new code
+- Include test fixtures and mocks where needed
+- Tests must be runnable immediately (no external dependencies)
+
+## Universal Testing Principles
+
+1. **Test-First Mindset**: Generate test cases before or alongside implementation
+2. **Isolation**: Each test must be independent and idempotent
+3. **Clarity**: Test names must clearly describe what they test
+4. **Speed**: Unit tests must run in milliseconds, not seconds
+5. **Determinism**: No random failures, no time-dependent tests
+
+## Required Test Categories
+
+For EVERY function/method/class generated:
+- ✅ Normal operation tests
+- ✅ Boundary condition tests  
+- ✅ Error handling tests
+- ✅ Input validation tests
+- ✅ Integration tests (where applicable)
+
+## Examples
+
+### Python Testing Pattern
+
+<example>
+# Implementation
+def validate_openshift_namespace(namespace: str) -> bool:
+    """Validate OpenShift namespace name according to RFC1123."""
+    if not namespace:
+        raise ValueError("Namespace cannot be empty")
+    if len(namespace) > 63:
+        raise ValueError("Namespace cannot exceed 63 characters")
+    if not namespace.replace('-', '').replace('.', '').isalnum():
+        raise ValueError("Namespace must contain only alphanumeric characters, hyphens, and dots")
+    return True
+
+# Tests (MANDATORY - Always included)
+import pytest
+
+class TestOpenshiftNamespace:
+    """Test suite for OpenShift namespace validation."""
+    
+    def test_valid_namespace(self):
+        """Test with valid namespace names."""
+        assert validate_openshift_namespace("my-app") is True
+        assert validate_openshift_namespace("app123") is True
+        assert validate_openshift_namespace("my-app.v1") is True
+    
+    def test_empty_namespace_raises_error(self):
+        """Test that empty namespace raises ValueError."""
+        with pytest.raises(ValueError, match="Namespace cannot be empty"):
+            validate_openshift_namespace("")
+    
+    def test_long_namespace_raises_error(self):
+        """Test that overly long namespace raises ValueError."""
+        long_name = "a" * 64
+        with pytest.raises(ValueError, match="cannot exceed 63 characters"):
+            validate_openshift_namespace(long_name)
+    
+    def test_invalid_characters_raise_error(self):
+        """Test that invalid characters raise ValueError."""
+        with pytest.raises(ValueError, match="alphanumeric characters"):
+            validate_openshift_namespace("my_app!")
+</example>
+
+### YAML/Kubernetes Testing Pattern
+
+<example>
+# When generating Kubernetes manifests, also generate validation tests:
+
+# deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: platform-monitor
+  namespace: platform-ops
+
+# test_deployment.py (MANDATORY)
+import yaml
+import pytest
+from kubernetes import client
+from kubernetes.client.rest import ApiException
+
+def test_deployment_yaml_valid():
+    """Test that deployment YAML is valid Kubernetes."""
+    with open('deployment.yaml', 'r') as f:
+        deployment = yaml.safe_load(f)
+    
+    # Validate required fields
+    assert deployment['apiVersion'] == 'apps/v1'
+    assert deployment['kind'] == 'Deployment'
+    assert 'metadata' in deployment
+    assert 'spec' in deployment
+
+def test_deployment_has_resource_limits():
+    """Test that deployment includes resource limits."""
+    with open('deployment.yaml', 'r') as f:
+        deployment = yaml.safe_load(f)
+    
+    containers = deployment['spec']['template']['spec']['containers']
+    for container in containers:
+        assert 'resources' in container
+        assert 'limits' in container['resources']
+        assert 'requests' in container['resources']
+</example>
+
+## Test Coverage Requirements
+
+When generating code, include coverage commands:
+
+```bash
+# Python
+pytest --cov=. --cov-report=html --cov-fail-under=80
+
+# JavaScript/TypeScript  
+npm test -- --coverage --coverageThreshold='{"global":{"branches":80,"functions":80,"lines":80,"statements":80}}'
+
+# Kubernetes YAML validation
+kubeval *.yaml && kube-score score *.yaml
+```
+
+## Integration with Platform Operations
+
+For OpenShift/Kubernetes work:
+- Test cluster connectivity before operations
+- Validate YAML syntax and Kubernetes compliance
+- Test RBAC permissions before applying manifests
+- Include rollback test procedures
+- Test monitoring and alerting configurations

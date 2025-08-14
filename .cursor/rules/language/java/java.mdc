@@ -1,0 +1,126 @@
+---
+alwaysApply: false
+description: Java programming rules for building robust, scalable, and maintainable
+  applications.
+globs:
+- '*.java'
+---
+
+- Use Java for building enterprise-grade applications with strong type safety and performance.
+- Follow Java naming conventions and coding standards for consistent code organization.
+- Implement proper object-oriented design with encapsulation, inheritance, and polymorphism.
+- Use appropriate data structures and collections for efficient data manipulation.
+- Implement proper exception handling with specific exception types and meaningful messages.
+- Use Java's concurrency utilities for thread-safe and efficient parallel processing.
+- Apply design patterns appropriately for common programming challenges and solutions.
+- Use build tools like Maven or Gradle for dependency management and project organization.
+- Implement comprehensive testing with JUnit and proper test organization strategies.
+- Follow memory management best practices and optimize garbage collection for performance.
+
+# Java Best Practices
+
+
+## Overview
+
+Java programming rules for building robust, scalable, and maintainable applications.
+
+
+## Installation and Setup
+
+### Basic Installation
+
+```bash
+pip install java
+```
+
+### Import and Basic Usage
+
+```python
+import java
+
+# Initialize
+client = java.Client()
+
+# Basic operation
+result = client.process(data)
+print(result)
+```
+
+## Code Examples
+
+### Example 1: Basic Usage
+
+```python
+# Java basic example
+from java import main_function
+
+# Process data
+data = ["item1", "item2", "item3"]
+results = main_function(data)
+
+for result in results:
+    print(f"Processed: {result}")
+```
+
+### Example 2: Advanced Features
+
+```python
+# Advanced configuration
+config = {
+    'timeout': 30,
+    'retry_count': 3,
+    'verbose': True
+}
+
+# Create configured instance
+instance = java.create(**config)
+
+# Use advanced features
+with instance.context() as ctx:
+    output = ctx.advanced_operation(
+        input_data=data,
+        options={'parallel': True}
+    )
+```
+
+## Advanced Topics
+
+### Performance Optimization
+
+When working with Java, consider these optimization strategies:
+- Cache frequently accessed data
+- Use batch operations where possible
+- Implement connection pooling
+- Monitor resource usage
+- Profile code to identify bottlenecks
+
+### Troubleshooting Guide
+
+Common issues and solutions:
+
+1. **Issue**: Configuration not loading
+   **Solution**: Check file paths and permissions
+
+2. **Issue**: Performance degradation
+   **Solution**: Review logs and increase resource limits
+
+3. **Issue**: Integration failures
+   **Solution**: Verify API versions and compatibility
+
+### Additional Resources
+
+- [Official Documentation](#)
+- [Community Forum](#)
+- [GitHub Repository](#)
+- [Tutorial Videos](#)
+- [Best Practices Guide](#)
+
+### Contributing
+
+Contributions are welcome! Please:
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Submit a pull request
+
+For more details, see CONTRIBUTING.md

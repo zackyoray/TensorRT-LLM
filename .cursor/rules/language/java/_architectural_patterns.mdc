@@ -1,0 +1,48 @@
+---
+description: "High-level architectural patterns for Java Spring Boot applications. Guides AI on structuring major components, aligning with SonarQube's focus on modularity and maintainability."
+globs: ["src/main/java/**/*.java"]
+alwaysApply: false
+---
+
+# Java Spring Boot Architectural Patterns
+
+- **Layered Architecture (Standard):**
+    - **Presentation (`/controller`):** Handles requests, delegates, returns responses.
+    - **Service (`/service`):** Business logic, orchestration, transaction management.
+    - **Data Access (`/repository`):** Persistence operations, entity mapping.
+    - **Domain (`/model` / `/domain`):** Core business entities, value objects.
+- **Clean Architecture / Hexagonal Architecture (Ports and Adapters) for Complex Apps:**
+    - **Core/Domain Layer:** Independent of frameworks. Contains domain entities and use cases (application-specific business rules). Defines interfaces (ports).
+    - **Ports (Interfaces):**
+        - Primary Ports (`port.in`): Defines how external actors interact with the application (e.g., `UserServicePort`).
+        - Secondary Ports (`port.out`): Defines how the application interacts with external systems (e.g., `UserRepositoryPort`).
+    - **Adapters (Implementations):**
+        - Primary Adapters (`adapter.in`): Implement primary ports (e.g., Spring REST Controller implementing `UserServicePort`).
+        - Secondary Adapters (`adapter.out`): Implement secondary ports (e.g., Spring Data JPA Repository implementing `UserRepositoryPort`).
+    - **Dependency Injection (Spring Context):** The `Application` main class or Spring configuration wires concrete adapter implementations to the use cases.
+- **Specific Principles:**
+    - **Dependency Inversion Principle (DIP):** Depend on abstractions (interfaces) not concretions.
+    - **Inversion of Control (IoC) / Dependency Injection (DI):** Fully leverage Spring's container.
+    - **Aspect-Oriented Programming (AOP):** Apply for cross-cutting concerns (logging, security, transactions, metrics) via Spring AOP. (SonarQube: Promotes clear separation of concerns).
+
+<rule>
+	<name>all_architectural_patterns</name>
+	<description>Comprehensive guidelines for architectural patterns and principles in Java Spring Boot applications.</description>
+	<requirements>
+		<requirement priority="high">
+			<description>Adhere to layered architecture principles for clear separation of concerns.</description>
+		</requirement>
+		<requirement priority="high">
+			<description>For complex applications, apply Clean/Hexagonal Architecture with defined ports and adapters.</description>
+		</requirement>
+		<requirement priority="high">
+			<description>Follow the Dependency Inversion Principle by depending on abstractions.</description>
+		</requirement>
+		<requirement priority="high">
+			<description>Fully leverage Spring's Inversion of Control and Dependency Injection mechanisms.</description>
+		</requirement>
+		<requirement priority="high">
+			<description>Apply Aspect-Oriented Programming via Spring AOP for cross-cutting concerns.</description>
+		</requirement>
+	</requirements>
+</rule>

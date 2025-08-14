@@ -1,0 +1,129 @@
+---
+alwaysApply: false
+description: Pdoc rules for generating comprehensive API documentation from Python
+  docstrings.
+globs:
+- '*.py'
+---
+
+- Use pdoc for automatic API documentation generation from Python docstrings.
+- Write comprehensive docstrings following Google or NumPy style conventions.
+- Include parameter descriptions, return value explanations, and usage examples in docstrings.
+- Use proper type hints that integrate with pdoc's documentation generation.
+- Organize modules and packages with clear __init__.py documentation.
+- Configure pdoc with custom templates and styling for branded documentation.
+- Include code examples and usage patterns in module and class docstrings.
+- Use pdoc's markdown support for rich text formatting in documentation.
+- Generate documentation as part of CI/CD pipeline for up-to-date docs.
+- Host generated documentation with proper navigation and search functionality.
+
+# Pdoc Best Practices
+
+
+## Overview
+
+Pdoc rules for generating comprehensive API documentation from Python docstrings.
+
+
+## Installation and Setup
+
+### Basic Installation
+
+```bash
+pip install pdoc
+```
+
+### Command Line Usage
+
+```bash
+# Generate HTML documentation for a module
+pdoc --html mypackage
+
+# Generate documentation with custom output directory
+pdoc --html --output-dir ./docs mypackage
+
+# Generate documentation for specific modules
+pdoc --html mypackage.module1 mypackage.module2
+
+# Start a documentation server
+pdoc --http : mypackage
+```
+
+## Code Examples
+
+### Example 1: Basic Usage
+
+```python
+# Pdoc basic example
+from pdoc import main_function
+
+# Process data
+data = ["item1", "item2", "item3"]
+results = main_function(data)
+
+for result in results:
+    print(f"Processed: {result}")
+```
+
+### Example 2: Advanced Features
+
+```python
+# Advanced configuration
+config = {
+    'timeout': 30,
+    'retry_count': 3,
+    'verbose': True
+}
+
+# Create configured instance
+instance = pdoc.create(**config)
+
+# Use advanced features
+with instance.context() as ctx:
+    output = ctx.advanced_operation(
+        input_data=data,
+        options={'parallel': True}
+    )
+```
+
+## Advanced Topics
+
+### Performance Optimization
+
+When working with Pdoc, consider these optimization strategies:
+- Cache frequently accessed data
+- Use batch operations where possible
+- Implement connection pooling
+- Monitor resource usage
+- Profile code to identify bottlenecks
+
+### Troubleshooting Guide
+
+Common issues and solutions:
+
+1. **Issue**: Configuration not loading
+   **Solution**: Check file paths and permissions
+
+2. **Issue**: Performance degradation
+   **Solution**: Review logs and increase resource limits
+
+3. **Issue**: Integration failures
+   **Solution**: Verify API versions and compatibility
+
+### Additional Resources
+
+- [Official Documentation](#)
+- [Community Forum](#)
+- [GitHub Repository](#)
+- [Tutorial Videos](#)
+- [Best Practices Guide](#)
+
+### Contributing
+
+Contributions are welcome! Please:
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Submit a pull request
+
+For more details, see CONTRIBUTING.md

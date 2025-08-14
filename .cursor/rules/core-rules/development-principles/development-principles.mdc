@@ -1,0 +1,109 @@
+---
+alwaysApply: true
+description: Core development principles including YAGNI, SOLID, KISS, DRY with efficiency
+  guidelines
+globs: []
+---
+
+# Development Principles
+
+These are foundational principles to be applied to all code and interactions.
+
+## YAGNI + SOLID + KISS + DRY
+Always consider these principles when designing or adding new code:
+- YAGNI (You Aren't Gonna Need It): Don't add functionality until necessary
+- SOLID: Single responsibility, Open-closed, Liskov substitution, Interface segregation, Dependency inversion
+- KISS: Keep It Simple, Stupid
+- DRY: Don't Repeat Yourself
+
+## Efficiency Principles
+Balance efficiency with readability and maintainability:
+- **Algorithmic Efficiency**: Choose appropriate algorithms with optimal time complexity for the scale of data
+  - Prefer O(n) or O(log n) solutions over O(n²) when working with large datasets
+  - Use vectorized operations (like in pandas/numpy) over loops when processing large amounts of data
+  - Consider chunking for processing large datasets that don't fit in memory
+  - Avoid premature optimization; measure before optimizing
+- **Memory Efficiency**: 
+  - Use generators/iterators for large sequences when appropriate
+  - Implement caching for expensive computations that are repeated
+  - Release resources promptly when no longer needed (close files, connections)
+  - Process large data in chunks to avoid memory exhaustion
+- **Storage Efficiency**:
+  - Select appropriate data formats (e.g., parquet over csv for large analytical data)
+  - Compress data when appropriate for long-term storage
+  - Only store data that is necessary for business requirements
+- **Implementation Balance**:
+  - Never sacrifice code readability for minor efficiency gains
+  - Document performance-focused code with clear explanations
+  - Only implement complex optimizations when there's measurable benefit
+  - Use profiling to identify actual bottlenecks rather than speculating
+
+# Development Principles Best Practices
+
+
+## Overview
+
+Core development principles including YAGNI, SOLID, KISS, DRY with efficiency guidelines
+
+
+## Core Concepts
+
+### Key Features
+- Feature 1: Description of what this feature does
+- Feature 2: How this improves workflow
+- Feature 3: Integration capabilities
+- Feature 4: Performance benefits
+
+### Common Use Cases
+1. **Use Case 1**: When you need to accomplish X
+2. **Use Case 2**: For scenarios requiring Y
+3. **Use Case 3**: To optimize Z processes
+
+### Best Practices
+- Always follow the principle of least privilege
+- Keep configurations version controlled
+- Monitor performance metrics
+- Implement proper error handling
+- Use consistent naming conventions
+
+## Advanced Topics
+
+### Performance Optimization
+
+When working with Development Principles, consider these optimization strategies:
+- Cache frequently accessed data
+- Use batch operations where possible
+- Implement connection pooling
+- Monitor resource usage
+- Profile code to identify bottlenecks
+
+### Troubleshooting Guide
+
+Common issues and solutions:
+
+1. **Issue**: Configuration not loading
+   **Solution**: Check file paths and permissions
+
+2. **Issue**: Performance degradation
+   **Solution**: Review logs and increase resource limits
+
+3. **Issue**: Integration failures
+   **Solution**: Verify API versions and compatibility
+
+### Additional Resources
+
+- [Official Documentation](#)
+- [Community Forum](#)
+- [GitHub Repository](#)
+- [Tutorial Videos](#)
+- [Best Practices Guide](#)
+
+### Contributing
+
+Contributions are welcome! Please:
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Submit a pull request
+
+For more details, see CONTRIBUTING.md

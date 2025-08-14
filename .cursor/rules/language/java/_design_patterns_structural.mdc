@@ -1,0 +1,37 @@
+---
+description: "Directives for using structural design patterns in Java Spring Boot, considering Spring's idioms and SonarQube's quality goals."
+globs: ["src/main/java/**/*.java"]
+alwaysApply: false
+---
+
+# Java Structural Design Patterns
+
+- **Adapter Pattern:**
+    - **When to use:** Crucial for Hexagonal Architecture to allow external dependencies (e.g., a third-party library, a legacy system) to conform to internal port interfaces.
+    - **Implementation:** Suggest creating an adapter class that implements the internal interface and wraps/delegates to the external component.
+- **Decorator/Wrapper Pattern:**
+    - **When to use:** For adding behavior to an existing object dynamically without changing its structure (e.g., adding logging, caching, retry logic, or security checks around a service interface).
+    - **Implementation:** Suggest creating a wrapper class that takes the original object in its constructor and adds functionality before/after delegating to the original. Often achieved via Spring AOP for cross-cutting concerns.
+- **Facade Pattern:**
+    - **When to use:** Providing a simplified, higher-level interface to a complex subsystem (e.g., a single service method orchestrating calls to multiple repositories or other services).
+- **Proxy Pattern:**
+    - **Spring AOP:** Spring uses proxies extensively for its AOP capabilities (e.g., `@Transactional`, `@Async`, `@Cacheable`). AI should suggest leveraging Spring's AOP for cross-cutting concerns rather than manually implementing proxies.
+
+<rule>
+  <name>java_structural_design_patterns</name>
+  <description>Directives for using structural design patterns in Java Spring Boot.</description>
+  <requirements>
+    <requirement priority="high">
+      <description>Utilize Adapter Pattern to allow external dependencies to conform to internal port interfaces, especially in Hexagonal Architecture.</description>
+    </requirement>
+    <requirement priority="high">
+      <description>Apply Decorator/Wrapper Pattern (often via Spring AOP) for dynamically adding behavior to existing objects without changing their structure.</description>
+    </requirement>
+    <requirement priority="medium">
+      <description>Employ Facade Pattern to provide a simplified, higher-level interface to complex subsystems.</description>
+    </requirement>
+    <requirement priority="high">
+      <description>Leverage Spring AOP's proxy capabilities for cross-cutting concerns instead of manually implementing proxies.</description>
+    </requirement>
+  </requirements>
+</rule>

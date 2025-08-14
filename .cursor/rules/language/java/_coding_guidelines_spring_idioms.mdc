@@ -1,0 +1,64 @@
+---
+description: "General coding guidelines for idiomatic Java and Spring Boot. Includes common SonarQube best practices for Java code quality."
+globs: ["src/main/java/**/*.java"]
+alwaysApply: false
+---
+
+# Idiomatic Java & Spring Boot Coding Guidelines
+
+- **Dependency Injection (DI):**
+    - **Constructor Injection (Preferred):** Always prefer constructor injection for dependencies (`@Autowired` on constructor). It makes dependencies explicit and facilitates testing.
+    - Field Injection: Use only sparingly, mainly for simple cases or in test classes.
+    - Setter Injection: Use when a dependency can be optionally changed after construction.
+- **Immutability:** Favor immutable objects where possible, especially for DTOs, configuration, and domain value objects. Use `final` fields and Lombok's `@Value` or `@Builder` with `final` fields.
+- **`Optional` Usage:**
+    - Use `java.util.Optional` for methods that might or might not return a value. Avoid `null` returns.
+    - Prefer functional operations on `Optional` (`map`, `flatMap`, `filter`, `orElse`, `orElseThrow`) over `isPresent()` followed by `get()`. (SonarQube: Warns about direct `Optional.get()` calls without `isPresent()` check).
+- **Bean Validation:** Use `javax.validation` (`jakarta.validation` for Spring Boot 3+) annotations (`@NotNull`, `@Size`, `@Valid`) on DTOs and method parameters for input validation. Integrate with Spring's `@Validated`.
+- **Configuration Properties:** Use `@ConfigurationProperties` for type-safe and externalized configuration, rather than individual `@Value` annotations for multiple related properties.
+- **Single Responsibility Principle (SRP):** Each class, method, or Spring component should have a single, well-defined responsibility. (SonarQube: High cohesion metrics).
+- **Open/Closed Principle (OCP):** Classes should be open for extension but closed for modification. Use interfaces and polymorphism.
+- **Lombok:** Use Lombok annotations (`@Data`, `@NoArgsConstructor`, `@AllArgsConstructor`, `@Builder`, `@Slf4j`) to reduce boilerplate code, but understand their implications.
+- **Stream API:** Prefer Java Stream API for collection processing.
+- **Generics:** Use generics to improve type safety and reduce boilerplate.
+- **Visibility:** Restrict visibility as much as possible (private > package-private > protected > public). (SonarQube: Detects unused private methods/fields).
+
+<rule>
+  <name>idiomatic_java_spring_boot_coding_guidelines</name>
+  <description>General coding guidelines for idiomatic Java and Spring Boot.</description>
+  <requirements>
+    <requirement priority="high">
+      <description>Prefer constructor injection for dependencies; use field injection sparingly.</description>
+    </requirement>
+    <requirement priority="high">
+      <description>Favor immutable objects where possible, especially for DTOs and domain value objects.</description>
+    </requirement>
+    <requirement priority="high">
+      <description>Use java.util.Optional for methods that might not return a value, preferring functional operations over isPresent() followed by get().</description>
+    </requirement>
+    <requirement priority="high">
+      <description>Utilize Bean Validation annotations (@NotNull, @Size, @Valid) on DTOs and method parameters for input validation.</description>
+    </requirement>
+    <requirement priority="medium">
+      <description>Use @ConfigurationProperties for type-safe and externalized configuration.</description>
+    </requirement>
+    <requirement priority="high">
+      <description>Adhere to Single Responsibility Principle (SRP): each component should have a single, well-defined responsibility.</description>
+    </requirement>
+    <requirement priority="high">
+      <description>Follow Open/Closed Principle (OCP): classes should be open for extension but closed for modification.</description>
+    </requirement>
+    <requirement priority="medium">
+      <description>Use Lombok annotations to reduce boilerplate code, understanding their implications.</description>
+    </requirement>
+    <requirement priority="medium">
+      <description>Prefer Java Stream API for collection processing.</description>
+    </requirement>
+    <requirement priority="high">
+      <description>Use generics to improve type safety and reduce boilerplate.</description>
+    </requirement>
+    <requirement priority="medium">
+      <description>Restrict visibility as much as possible (private > package-private > protected > public).</description>
+    </requirement>
+  </requirements>
+</rule>

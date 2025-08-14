@@ -1,0 +1,146 @@
+---
+alwaysApply: true
+description: Instructs the AI to report all loaded MDC rules at the start of each
+  conversation
+globs: null
+---
+
+# MDC Rule Reporting Protocol
+
+## First Message Rule
+When responding to the FIRST message in any new conversation or chat session:
+
+1. **Begin with a Rule Report Section** formatted as follows:
+   ```
+   📋 **Active MDC Rules Report**
+   ================================
+   I have loaded the following MDC rules for this session:
+   
+   **Core Rules (Always Applied):**
+   - rule-reporting.mdc (this rule)
+   - [List all other rules with alwaysApply: true]
+   
+   **Context-Specific Rules:**
+   - [List rules that apply based on file patterns/globs]
+   
+   **Total Rules Loaded:** [count]
+   ================================
+   ```
+
+2. **Include Rule Details** for each loaded rule:
+   - Rule filename and path
+   - Brief description from the rule's frontmatter
+   - Whether it's always applied or context-specific
+   - The glob patterns it matches (if applicable)
+
+3. **After the Rule Report**, proceed with the normal response to the user's query
+
+## Subsequent Messages
+For all messages after the first, DO NOT repeat the rule report unless specifically asked about loaded rules.
+
+## When Asked About Rules
+If the user specifically asks "what rules are loaded?" or similar questions at any point:
+- Provide the full rule report again
+- Highlight any rules that have changed since the session started
+- Explain how rules are applied based on context
+
+## Rule Loading Detection
+To determine which rules are loaded:
+- Check for rules with `alwaysApply: true` - these are always active
+- Check the current file context and match against rule glob patterns
+- Consider the type of task being performed (coding, documentation, etc.)
+
+## Example First Response Format:
+```
+📋 **Active MDC Rules Report**
+================================
+I have loaded the following MDC rules for this session:
+
+**Core Rules (Always Applied):**
+- rule-reporting.mdc - Reports loaded MDC rules at session start
+- context-awareness-and-rules.mdc - Ensures comprehensive rule application
+- mandatory-testing-always.mdc - Enforces unit testing for all code
+- security-baseline-always.mdc - Security standards for all operations
+- no-emojis-professional.mdc - Professional documentation standards
+
+**Context-Specific Rules:**
+- python.mdc - Python development best practices (active for *.py files)
+- pytest.mdc - Testing framework patterns (active for test_*.py files)
+
+**Total Rules Loaded:** 7
+================================
+
+[Normal response to user query follows here...]
+```
+
+This rule ensures transparency about which MDC rules are influencing the AI's behavior in each session.
+
+# Rule Reporting Best Practices
+
+
+## Overview
+
+Instructs the AI to report all loaded MDC rules at the start of each conversation
+
+
+## Core Concepts
+
+### Key Features
+- Feature 1: Description of what this feature does
+- Feature 2: How this improves workflow
+- Feature 3: Integration capabilities
+- Feature 4: Performance benefits
+
+### Common Use Cases
+1. **Use Case 1**: When you need to accomplish X
+2. **Use Case 2**: For scenarios requiring Y
+3. **Use Case 3**: To optimize Z processes
+
+### Best Practices
+- Always follow the principle of least privilege
+- Keep configurations version controlled
+- Monitor performance metrics
+- Implement proper error handling
+- Use consistent naming conventions
+
+## Advanced Topics
+
+### Performance Optimization
+
+When working with Rule Reporting, consider these optimization strategies:
+- Cache frequently accessed data
+- Use batch operations where possible
+- Implement connection pooling
+- Monitor resource usage
+- Profile code to identify bottlenecks
+
+### Troubleshooting Guide
+
+Common issues and solutions:
+
+1. **Issue**: Configuration not loading
+   **Solution**: Check file paths and permissions
+
+2. **Issue**: Performance degradation
+   **Solution**: Review logs and increase resource limits
+
+3. **Issue**: Integration failures
+   **Solution**: Verify API versions and compatibility
+
+### Additional Resources
+
+- [Official Documentation](#)
+- [Community Forum](#)
+- [GitHub Repository](#)
+- [Tutorial Videos](#)
+- [Best Practices Guide](#)
+
+### Contributing
+
+Contributions are welcome! Please:
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Submit a pull request
+
+For more details, see CONTRIBUTING.md

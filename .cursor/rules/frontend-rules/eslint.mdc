@@ -1,0 +1,88 @@
+---
+alwaysApply: false
+description: ESLint rules for maintaining code quality and consistency in JavaScript
+  and TypeScript projects.
+globs:
+- '*.js,*.jsx,*.ts,*.tsx'
+---
+
+- Use ESLint for static code analysis and maintaining code quality standards.
+- Configure ESLint with appropriate presets for your project type (React, Node.js, etc.).
+- Implement custom ESLint rules for project-specific coding standards.
+- Use ESLint plugins for framework-specific linting (React, Vue, Angular).
+- Integrate ESLint with your IDE for real-time code quality feedback.
+- Configure ESLint to work with Prettier for code formatting consistency.
+- Use ESLint's autofix capabilities to automatically resolve common issues.
+- Set up ESLint in CI/CD pipeline to enforce code quality in pull requests.
+- Create comprehensive ESLint configuration files with proper rule inheritance.
+- Use ESLint overrides for different file types and environments.
+
+# Eslint Best Practices
+
+
+## Overview
+
+ESLint rules for maintaining code quality and consistency in JavaScript and TypeScript projects.
+
+
+## Core Concepts
+
+### Key Features
+- Feature 1: Description of what this feature does
+- Feature 2: How this improves workflow
+- Feature 3: Integration capabilities
+- Feature 4: Performance benefits
+
+### Common Use Cases
+1. **Use Case 1**: When you need to accomplish X
+2. **Use Case 2**: For scenarios requiring Y
+3. **Use Case 3**: To optimize Z processes
+
+### Best Practices
+- Always follow the principle of least privilege
+- Keep configurations version controlled
+- Monitor performance metrics
+- Implement proper error handling
+- Use consistent naming conventions
+
+## Advanced Topics
+
+### Performance Optimization
+
+When working with Eslint, consider these optimization strategies:
+- Cache frequently accessed data
+- Use batch operations where possible
+- Implement connection pooling
+- Monitor resource usage
+- Profile code to identify bottlenecks
+
+### Troubleshooting Guide
+
+Common issues and solutions:
+
+1. **Issue**: Configuration not loading
+   **Solution**: Check file paths and permissions
+
+2. **Issue**: Performance degradation
+   **Solution**: Review logs and increase resource limits
+
+3. **Issue**: Integration failures
+   **Solution**: Verify API versions and compatibility
+
+### Additional Resources
+
+- [Official Documentation](#)
+- [Community Forum](#)
+- [GitHub Repository](#)
+- [Tutorial Videos](#)
+- [Best Practices Guide](#)
+
+### Contributing
+
+Contributions are welcome! Please:
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Submit a pull request
+
+For more details, see CONTRIBUTING.md

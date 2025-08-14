@@ -1,0 +1,839 @@
+---
+description: Diagram As Code Standards best practices and guidelines
+globs:
+- '*.rst'
+- '*.md'
+- conf.py
+- Makefile
+- '**/docs/**'
+alwaysApply: false
+---
+
+# Diagram-as-Code Standards for Platform Administration
+
+## Document Export Workflow Optimization
+
+### **Primary Use Case: Markdown → DOCX → Google Docs**
+
+For team collaboration requiring document export and Google Docs sharing:
+
+### **Recommended Approach: Mermaid-First with PlantUML Backup**
+
+## Tool Selection by Use Case
+
+### **Mermaid** - Quick Documentation & Processes
+**Use for:**
+- Process flows and workflows
+- Simple architecture overviews
+- Incident response flowcharts
+- Git workflows and CI/CD pipelines
+
+**Syntax Example:**
+```mermaid
+flowchart TB
+    subgraph "OpenShift Cluster"
+        API[API Server]
+        ETCD[(etcd)]
+        SCHED[Scheduler]
+    end
+    
+    subgraph "Worker Nodes"
+        N1[Node 1] --> POD1[Pods]
+        N2[Node 2] --> POD2[Pods]
+    end
+    
+    API --> ETCD
+    API --> SCHED
+    SCHED --> N1
+    SCHED --> N2
+```
+
+### **PlantUML** - Complex System Architecture
+**Use for:**
+- Detailed OpenShift cluster architecture
+- Network diagrams with proper node positioning
+- Component interaction diagrams
+- Sequence diagrams for API flows
+
+**Syntax Example:**
+```plantuml
+@startuml OpenShift Architecture
+!define RECTANGLE class
+
+package "Control Plane" {
+    RECTANGLE "API Server" as API
+    database "etcd" as ETCD
+    RECTANGLE "Scheduler" as SCHED
+    RECTANGLE "Controller Manager" as CM
+}
+
+package "Worker Nodes" {
+    node "Node 1" {
+        RECTANGLE "kubelet" as K1
+        RECTANGLE "Container Runtime" as CR1
+        RECTANGLE "Pods" as P1
+    }
+    
+    node "Node 2" {
+        RECTANGLE "kubelet" as K2
+        RECTANGLE "Container Runtime" as CR2
+        RECTANGLE "Pods" as P2
+    }
+}
+
+package "OpenShift Data Foundation" {
+    storage "Ceph Cluster" as CEPH
+    RECTANGLE "Rook Operator" as ROOK
+}
+
+API --> ETCD
+API --> SCHED
+API --> CM
+SCHED --> K1
+SCHED --> K2
+K1 --> CR1
+K2 --> CR2
+P1 --> CEPH
+P2 --> CEPH
+@enduml
+```
+
+### **Python Diagrams** - Infrastructure Visualization
+**Use for:**
+- Cloud infrastructure diagrams
+- Multi-cluster architectures
+- Vendor-specific component diagrams
+- Automated diagram generation
+
+**Python Example:**
+```python
+from diagrams import Diagram, Cluster
+from diagrams.k8s.controlplane import APIServer, Etcd
+from diagrams.k8s.compute import Pod
+from diagrams.k8s.storage import PersistentVolume
+from diagrams.onprem.container import Docker
+
+with Diagram("OpenShift Platform Architecture", show=False):
+    with Cluster("Control Plane"):
+        api = APIServer("API Server")
+        etcd = Etcd("etcd")
+        
+    with Cluster("Worker Nodes"):
+        pods = [Pod("App Pod"), Pod("Monitor Pod")]
+        
+    with Cluster("Storage"):
+        storage = PersistentVolume("ODF Storage")
+        
+    api >> etcd
+    api >> pods
+    pods >> storage
+```
+
+### **D2** - Modern Clean Diagrams
+**Use for:**
+- Software architecture diagrams
+- Container orchestration flows
+- Modern, clean system overviews
+- Presentations and stakeholder communications
+
+**D2 Example:**
+```d2
+direction: right
+
+openshift: OpenShift Cluster {
+  control_plane: Control Plane {
+    api: API Server
+    etcd: etcd Database
+    scheduler: Scheduler
+  }
+  
+  workers: Worker Nodes {
+    node1: Node 1 {
+      pods: Application Pods
+    }
+    node2: Node 2 {
+      pods: Monitor Pods
+    }
+  }
+  
+  storage: ODF Storage {
+    ceph: Ceph Cluster
+    rbd: Block Storage
+    cephfs: File Storage
+  }
+}
+
+external: External Systems {
+  git: Git Repository
+  registry: Container Registry
+  monitoring: Prometheus/Grafana
+}
+
+api -> etcd: stores state
+api -> scheduler: schedules pods
+scheduler -> node1.pods
+scheduler -> node2.pods
+node1.pods -> ceph: persistent data
+node2.pods -> ceph: logs & metrics
+git -> api: GitOps sync
+registry -> workers: pull images
+monitoring -> workers: collect metrics
+```
+
+## Implementation Strategy
+
+### **1. Document Export Workflow Setup**
+
+```bash
+# Essential tools for your workflow
+npm install -g @mermaid-js/mermaid-cli
+brew install pandoc plantuml
+
+# Poetry dependencies for document generation
+poetry add --group docs mermaid-cli pandoc
+
+# VS Code Extensions for authoring
+code --install-extension bierner.markdown-mermaid
+code --install-extension plantuml.plantuml
+code --install-extension ms-vscode.pandoc
+```
+
+### **2. Complete Document Generation Script**
+
+```bash
+#!/bin/bash
+# generate_team_docs.sh - Convert markdown with diagrams to DOCX
+
+set -e
+
+INPUT_MD="$1"
+OUTPUT_DOCX="${INPUT_MD%.md}.docx"
+TEMP_DIR="temp_diagrams"
+
+echo "🔄 Generating diagrams and converting to DOCX..."
+
+# Create temp directory for diagrams
+mkdir -p "$TEMP_DIR"
+
+# Extract and render Mermaid diagrams
+echo "📊 Rendering Mermaid diagrams..."
+mmdc -i "$INPUT_MD" -o "$TEMP_DIR/" -t neutral -b white
+
+# Extract and render PlantUML diagrams (if any)
+echo "🏗️ Rendering PlantUML diagrams..."
+grep -n "```plantuml" "$INPUT_MD" | while read -r line; do
+    line_num=$(echo "$line" | cut -d: -f1)
+    diagram_file="$TEMP_DIR/plantuml_${line_num}.puml"
+    
+    # Extract PlantUML content
+    sed -n "${line_num},/^```$/p" "$INPUT_MD" | sed '1d;$d' > "$diagram_file"
+    
+    # Generate PNG
+    plantuml -tpng -o "$TEMP_DIR" "$diagram_file"
+done
+
+# Convert to DOCX with embedded images
+echo "📄 Converting to DOCX..."
+pandoc "$INPUT_MD" \
+    --from markdown \
+    --to docx \
+    --output "$OUTPUT_DOCX" \
+    --reference-doc=reference.docx \
+    --extract-media="$TEMP_DIR"
+
+echo "✅ Generated: $OUTPUT_DOCX"
+echo "🗂️ Diagram images in: $TEMP_DIR"
+
+# Clean up (optional)
+# rm -rf "$TEMP_DIR"
+```
+
+### **3. Team-Friendly Documentation Structure**
+
+```
+docs/
+├── team-docs/                    # Documents for DOCX export
+│   ├── platform-overview.md     # Mermaid diagrams
+│   ├── incident-procedures.md   # Process flows
+│   ├── architecture-guide.md    # PlantUML for complex diagrams
+│   └── troubleshooting.md       # Step-by-step with Mermaid
+├── generated/                    # Generated DOCX files
+│   ├── platform-overview.docx
+│   ├── incident-procedures.docx
+│   └── architecture-guide.docx
+├── diagram-images/               # PNG exports for sharing
+│   ├── mermaid/
+│   └── plantuml/
+└── templates/
+    ├── reference.docx            # Corporate style template
+    └── generate_docs.sh          # Conversion script
+```
+
+### **3. Automated Diagram Generation**
+
+```python
+# generate_diagrams.py
+import subprocess
+from pathlib import Path
+
+def generate_all_diagrams():
+    """Generate diagrams from all source files."""
+    
+    # Mermaid diagrams (handled by GitHub/GitLab automatically)
+    print("✅ Mermaid diagrams render automatically")
+    
+    # PlantUML diagrams
+    plantuml_files = Path("docs/diagrams/plantuml").glob("*.puml")
+    for file in plantuml_files:
+        subprocess.run([
+            "plantuml", 
+            "-tpng", 
+            "-o", "../../../static/images/",
+            str(file)
+        ])
+    print("✅ PlantUML diagrams generated")
+    
+    # D2 diagrams
+    d2_files = Path("docs/diagrams/d2").glob("*.d2")
+    for file in d2_files:
+        output = f"static/images/{file.stem}.png"
+        subprocess.run(["d2", str(file), output])
+    print("✅ D2 diagrams generated")
+    
+    # Python diagrams
+    python_files = Path("docs/diagrams/python").glob("*.py")
+    for file in python_files:
+        subprocess.run(["python", str(file)])
+    print("✅ Python diagrams generated")
+
+if __name__ == "__main__":
+    generate_all_diagrams()
+```
+
+## Best Practices by Diagram Type
+
+### **Process Flow Diagrams** → **Mermaid**
+```mermaid
+gitGraph
+    commit id: "Initial"
+    branch feature
+    checkout feature
+    commit id: "Feature Work"
+    checkout main
+    merge feature
+    commit id: "Deploy to Staging"
+    commit id: "Deploy to Production"
+```
+
+### **Network Architecture** → **PlantUML**
+```plantuml
+@startuml Network Architecture
+!include <tupadr3/common>
+!include <office/Servers/database_server>
+!include <office/Servers/application_server>
+
+package "DMZ" {
+    [Load Balancer] as LB
+}
+
+package "Application Tier" {
+    [OpenShift Cluster] as OCP
+    [Worker Node 1] as W1
+    [Worker Node 2] as W2
+}
+
+package "Data Tier" {
+    database "PostgreSQL" as DB
+    storage "Object Storage" as S3
+}
+
+LB --> OCP
+OCP --> W1
+OCP --> W2
+W1 --> DB
+W2 --> S3
+@enduml
+```
+
+### **Infrastructure Overview** → **Python Diagrams**
+```python
+from diagrams import Diagram, Cluster, Edge
+from diagrams.aws.compute import EC2
+from diagrams.aws.database import RDS
+from diagrams.aws.storage import S3
+
+with Diagram("Platform Infrastructure", show=False, direction="TB"):
+    with Cluster("OpenShift Cluster"):
+        masters = [EC2("Master 1"), EC2("Master 2"), EC2("Master 3")]
+        workers = [EC2("Worker 1"), EC2("Worker 2"), EC2("Worker 3")]
+        
+    with Cluster("Data Layer"):
+        database = RDS("PostgreSQL")
+        storage = S3("Object Storage")
+        
+    masters >> Edge(label="orchestrates") >> workers
+    workers >> Edge(label="reads/writes") >> database
+    workers >> Edge(label="stores") >> storage
+```
+
+### **Modern System Design** → **D2**
+```d2
+title: Container Platform Architecture
+
+cloud: Cloud Infrastructure {
+  vpc: VPC Network {
+    public: Public Subnets {
+      alb: Application Load Balancer
+      nat: NAT Gateway
+    }
+    
+    private: Private Subnets {
+      masters: Control Plane Nodes
+      workers: Worker Nodes
+      rds: Database
+    }
+  }
+}
+
+users: External Users
+monitoring: Monitoring Stack
+
+users -> alb: HTTPS Traffic
+alb -> masters: API Requests
+masters -> workers: Pod Scheduling
+workers -> rds: Data Access
+workers -> monitoring: Metrics & Logs
+```
+
+## Red Hat Branding Standards
+
+### **Color Palette**
+- **Red Hat Red**: `#ee0000`
+- **Dark Blue**: `#004153`
+- **Medium Blue**: `#0066cc`
+- **Gray**: `#6c757d`
+- **Success Green**: `#28a745`
+- **Warning Orange**: `#fd7e14`
+
+## NVIDIA Brand Colors
+- **NVIDIA Green**: #76b900
+- **NVIDIA Blue**: #0071c5
+- **NVIDIA Gray**: #5e5e5e
+- **NVIDIA Black**: #000000
+- **NVIDIA Light Gray**: #cdcdcd
+
+### **Mermaid Styling**
+```mermaid
+graph TB
+    A[OpenShift] --> B[Applications]
+    A --> C[Storage]
+    A --> D[Networking]
+    
+    style A fill:#ee0000,color:#fff
+    style B fill:#0066cc,color:#fff
+    style C fill:#004153,color:#fff
+    style D fill:#6c757d,color:#fff
+```
+
+### **PlantUML Styling**
+```plantuml
+@startuml
+skinparam backgroundColor white
+skinparam rectangle {
+    BackgroundColor #0066cc
+    BorderColor #ee0000
+    FontColor white
+}
+skinparam database {
+    BackgroundColor #004153
+    BorderColor #ee0000
+    FontColor white
+}
+@enduml
+```
+
+## Integration with Documentation Workflow
+
+### **CI/CD Pipeline**
+```yaml
+# .github/workflows/docs.yml
+name: Generate Diagrams
+on: [push, pull_request]
+
+jobs:
+  diagrams:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Setup PlantUML
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y plantuml
+        
+    - name: Setup D2
+      run: |
+        curl -fsSL https://d2lang.com/install.sh | sh -s --
+        
+    - name: Setup Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+        
+    - name: Install dependencies
+      run: poetry install --only docs
+      
+    - name: Generate all diagrams
+      run: poetry run python scripts/generate_diagrams.py
+      
+    - name: Commit generated diagrams
+      run: |
+        git config --local user.email "action@github.com"
+        git config --local user.name "GitHub Action"
+        git add static/images/
+        git commit -m "Auto-generate diagrams" || exit 0
+        git push
+```
+
+## Tool Comparison for Document Export Workflow
+
+| Criteria | Mermaid | PlantUML | D2 | Python Diagrams |
+|----------|---------|-----------|----|-----------------| 
+| **DOCX Export Quality** | ⭐⭐⭐⭐⭐ | ⭐⭐⭐⭐ | ⭐⭐⭐ | ⭐⭐ |
+| **Team Collaboration** | ⭐⭐⭐⭐⭐ | ⭐⭐⭐ | ⭐⭐⭐ | ⭐ |
+| **PNG Generation** | ⭐⭐⭐⭐ | ⭐⭐⭐⭐⭐ | ⭐⭐⭐ | ⭐⭐⭐ |
+| **Google Docs Compatible** | ⭐⭐⭐⭐⭐ | ⭐⭐⭐⭐ | ⭐⭐⭐ | ⭐⭐ |
+| **Pandoc Integration** | ⭐⭐⭐⭐⭐ | ⭐⭐⭐⭐ | ⭐⭐ | ⭐ |
+| **Learning Curve** | ⭐⭐⭐⭐⭐ | ⭐⭐⭐ | ⭐⭐⭐ | ⭐⭐ |
+| **Markdown Native** | ⭐⭐⭐⭐⭐ | ⭐⭐⭐⭐ | ⭐⭐⭐ | ⭐ |
+
+### **Updated Recommendation for Your Workflow**
+
+**Primary Tool: Mermaid** (95% of your diagrams)
+- Perfect for team collaboration in markdown
+- Excellent DOCX export via pandoc
+- Google Docs friendly PNG output
+- Easy for non-technical team members
+
+**Secondary Tool: PlantUML** (5% - complex architecture only)
+- When you need detailed network/system diagrams
+- Superior PNG quality for complex layouts
+- Still integrates well with your workflow
+
+**Skip: D2 and Python Diagrams** 
+- Adds complexity without benefit for your use case
+- Team collaboration barriers
+- Extra tooling overhead
+
+## Complete Workflow Example
+
+### **1. Sample Team Document**
+
+```markdown
+# OpenShift Incident Response Procedure
+
+## Overview
+This document outlines our incident response workflow for OpenShift platform issues.
+
+## Incident Response Flow
+
+```mermaid
+flowchart TD
+    A[Incident Detected] --> B{Severity Level?}
+    B -->|P1 Critical| C[Page On-Call Engineer]
+    B -->|P2 High| D[Create Incident Ticket]
+    B -->|P3 Medium| E[Standard Queue]
+    
+    C --> F[Emergency Response Team]
+    D --> G[Incident Commander Assigned]
+    E --> H[Next Available Engineer]
+    
+    F --> I[Immediate Mitigation]
+    G --> I
+    H --> J[Standard Investigation]
+    
+    I --> K{Service Restored?}
+    J --> K
+    
+    K -->|No| L[Escalate]
+    K -->|Yes| M[Post-Incident Review]
+    
+    L --> F
+    M --> N[Update Runbooks]
+    N --> O[Close Incident]
+    
+    style A fill:#ff6b6b,color:#fff
+    style C fill:#dc3545,color:#fff
+    style F fill:#dc3545,color:#fff
+    style I fill:#ffc107,color:#000
+    style M fill:#28a745,color:#fff
+    style O fill:#28a745,color:#fff
+```
+
+## Response Times
+
+| Severity | Response Time | Resolution Target |
+|----------|---------------|-------------------|
+| P1 - Critical | 15 minutes | 4 hours |
+| P2 - High | 1 hour | 24 hours |
+| P3 - Medium | 4 hours | 1 week |
+
+## Escalation Contacts
+
+- **Platform Team Lead**: ext. 1234
+- **OpenShift SME**: ext. 5678
+- **Infrastructure Manager**: ext. 9012
+```
+
+### **2. Convert to DOCX**
+
+```bash
+# Generate PNG from mermaid diagrams
+mmdc -i incident-response.md -o ./images/ -t neutral -b white
+
+# Convert to DOCX with corporate template
+pandoc incident-response.md \
+    --from markdown \
+    --to docx \
+    --output incident-response.docx \
+    --reference-doc=corporate-template.docx
+
+# Result: Clean DOCX with embedded diagram images
+# Ready for Google Docs upload and team sharing
+```
+
+### **3. Team Collaboration Benefits**
+
+✅ **Non-technical team members** can edit markdown
+✅ **Consistent formatting** via corporate DOCX template  
+✅ **Professional diagrams** with Red Hat branding
+✅ **Google Docs compatible** for collaborative editing
+✅ **Version control** friendly markdown source
+✅ **Automated conversion** reduces manual work
+
+### **4. Corporate Template Setup**
+
+```bash
+# Create reference.docx with your corporate styles
+# This ensures consistent branding in all generated documents
+
+# Example styles to include:
+# - Company letterhead
+# - Standard fonts (Arial, Calibri)
+# - Color scheme matching Red Hat branding
+# - Table formatting
+# - Heading hierarchy
+```
+
+This approach gives you the **best of both worlds**: technical accuracy with Mermaid's simplicity, and professional presentation for stakeholder communication.
+
+## **Install PlantUML Extension in Cursor**
+
+1. **Open Cursor**
+2. **Press** `Cmd+Shift+X` (Extensions)
+3. **Search for**: `PlantUML`
+4. **Install**: `PlantUML` by **jebbs**
+   - Make sure it's the one with ID: `jebbs.plantuml`
+
+## **Alternative: Direct Installation**
+
+You can also install it directly through Cursor's command palette:
+
+1. **Press** `Cmd+Shift+P` 
+2. **Type**: `Extensions: Install Extensions`
+3. **Search**: `jebbs.plantuml`
+4. **Install**
+
+## **Configure the Extension**
+
+After installation, you might need to configure the PlantUML path:
+
+1. **Press** `Cmd+,` (Settings)
+2. **Search for**: `plantuml`
+3. **Set** `Plantuml: Java` to: `/opt/homebrew/bin/java` (if needed)
+4. **Set** `Plantuml: Jar` to: `/opt/homebrew/Cellar/plantuml/1.2025.4/libexec/plantuml.jar`
+
+## **Test It Works**
+
+After installing the extension:
+
+1. **Create a test file**: `test.puml`
+2. **Add this content**:
+   ```plantuml
+   @startuml
+   A --> B: Hello
+   @enduml
+   ```
+3. **Right-click** → **Preview Current PlantUML**
+
+## **For Markdown Preview**
+
+The extension should also make PlantUML blocks render in markdown preview. Try opening your `.mdc` file and the PlantUML diagrams should now render properly!
+
+**Let me know if the extension installation works and the diagrams start rendering!**
+
+## **Automated Complex Diagram Conversion**
+
+For handling complex Mermaid diagrams with high-quality output, use the automated conversion tools:
+
+### **Quick Start**
+
+```bash
+# Navigate to the mermaid tools directory
+cd 30-documentation-rules/mermaid/
+
+# Convert with default settings
+./convert.sh document.md
+
+# Convert with high quality
+./convert.sh document.md report.docx high
+
+# Convert with ultra quality for complex diagrams  
+./convert.sh architecture.md system-design.docx ultra
+```
+
+### **Quality Presets for Complex Diagrams**
+
+| Preset | Resolution | Scale | Use Case |
+|--------|------------|-------|----------|
+| `standard` | 2048×1536 | 2.0 | Fast, good for most diagrams |
+| `high` | 3000×2250 | 3.0 | Better quality, slower |
+| `ultra` | 4096×3072 | 4.0 | Best quality, complex diagrams |
+| `wide` | 4000×2000 | 2.5 | Sequence, Gantt, Journey diagrams |
+
+### **Advanced Features**
+
+- **Automatic diagram type detection** (flowchart, sequence, class, etc.)
+- **Dynamic sizing** based on diagram complexity
+- **Red Hat branding** via custom configuration
+- **Error handling** with fallback options
+- **Progress reporting** for long-running conversions
+- **Timeout handling** for complex diagrams (2 minutes max)
+
+### **Behind the Scenes**
+
+The conversion uses an advanced Python engine (`./generate-docx.py`) that:
+
+1. **Detects** all Mermaid diagram types in your markdown
+2. **Generates** high-resolution PNGs with proper scaling
+3. **Replaces** diagram code blocks with image references
+4. **Converts** to professional DOCX with Pandoc
+5. **Embeds** images at 300 DPI for crisp printing
+
+### **Dependencies Check**
+
+The script automatically verifies you have:
+- `mmdc` (Mermaid CLI)
+- `pandoc` (Document converter)
+- `python3` (Script runtime)
+
+### **Complex Diagram Examples**
+
+This system handles **all** Mermaid diagram types:
+
+- **Flowcharts** with multiple subgraphs
+- **Sequence diagrams** with complex interactions
+- **Class diagrams** with inheritance
+- **State diagrams** with nested states
+- **C4 diagrams** for architecture
+- **Gantt charts** for project timelines
+- **Journey maps** for user flows
+- **Mindmaps** for concept visualization
+- **Git graphs** for repository flows
+
+Perfect for your OpenShift documentation, incident procedures, and architecture guides that need to be shared via Google Docs!
+
+## **Critical Mermaid Syntax Validation Rules**
+
+### **ALWAYS validate diagrams before using:**
+
+```bash
+# Use the validation script (after navigating to mermaid/ directory)
+./validate-diagram.sh your-document.md
+
+# Test individual diagrams
+./validate-diagram.sh diagram.mmd
+
+# Interactive testing
+./validate-diagram.sh
+```
+
+### **Common Syntax Errors to Avoid:**
+
+#### **Sequence Diagrams - Critical Rules:**
+```mermaid
+# ✅ CORRECT
+alt Issue Resolved
+    Team->>Monitor: Validate Fix
+    IC->>Mgmt: All Clear
+else
+    Note over IC: Need Escalation
+    IC->>Vendor: Escalate Priority
+end
+
+# ❌ WRONG - Text after else
+else Need Escalation    # Should be just "else"
+
+# ❌ WRONG - Break outside alt
+break                   # Must be inside alt block
+
+# ❌ WRONG - Invalid arrows
+User-->Monitor: Message # Should be ->> for sequence
+```
+
+#### **Flowcharts - Essential Patterns:**
+```mermaid
+# ✅ CORRECT
+flowchart TD
+    subgraph "Control Plane"
+        API[API Server]
+    end
+    style API fill:#ee0000,color:#fff
+
+# ❌ WRONG - Missing quotes
+subgraph Control Plane  # Missing quotes
+
+# ❌ WRONG - Invalid style
+style API fill:red      # Missing quotes and #
+```
+
+#### **State Diagrams - Version Requirements:**
+```mermaid
+# ✅ CORRECT
+stateDiagram-v2
+    [*] --> Active
+    Active --> [*]
+
+# ❌ WRONG - Old syntax
+stateDiagram           # Should be stateDiagram-v2
+```
+
+### **Validation Workflow Integration:**
+
+1. **Before adding any diagram** - test syntax with validation script
+2. **During document creation** - run batch validation on markdown files  
+3. **Before DOCX conversion** - ensure all diagrams pass validation
+4. **Pre-commit hook** - validate diagrams automatically
+
+### **Quick Syntax Reference:**
+
+| Diagram Type | Key Rules |
+|--------------|-----------|
+| **Sequence** | `else` standalone, `->>` arrows, participants declared |
+| **Flowchart** | Direction required, subgraphs quoted, hex colors |
+| **State** | Use `stateDiagram-v2`, proper arrows `-->` |
+| **Gantt** | `dateFormat` required, sections mandatory |
+| **Journey** | Scores 1-5 required, actors comma-separated |
+
+### **Error Prevention Checklist:**
+
+- [ ] Proper diagram type declaration
+- [ ] All participants/elements declared  
+- [ ] Correct arrow syntax for diagram type
+- [ ] Valid color codes (hex with #)
+- [ ] Quoted subgraph/section names
+- [ ] No trailing spaces
+- [ ] Consistent indentation
+- [ ] All blocks properly closed with `end`
+
+🦅🦅🦅

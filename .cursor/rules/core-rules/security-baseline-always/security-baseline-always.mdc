@@ -1,0 +1,401 @@
+---
+description: Enforces security best practices for all code generation and development activities
+globs: 
+alwaysApply: true
+---
+
+# Security Baseline Standards
+
+## Critical Rules
+
+- NEVER hardcode credentials, API keys, tokens, or secrets
+- ALWAYS validate and sanitize all external inputs
+- USE parameterized queries for database operations
+- IMPLEMENT principle of least privilege for all access
+- ENCRYPT sensitive data in transit and at rest
+- FOLLOW secure coding practices (OWASP guidelines)
+- INCLUDE proper authentication and authorization
+- APPLY security contexts for all container workloads
+
+## OpenShift/Kubernetes Security
+
+### Mandatory Security Context
+
+<example>
+# Every pod/container MUST include security context
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: secure-app
+spec:
+  template:
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1001
+        fsGroup: 2001
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+      - name: app
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          runAsNonRoot: true
+          capabilities:
+            drop:
+            - ALL
+        # Resource limits are security controls
+        resources:
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
+</example>
+
+### Secret Management
+
+<example>
+# GOOD - Using Kubernetes secrets
+apiVersion: v1
+kind: Secret
+metadata:
+  name: database-credentials
+type: Opaque
+data:
+  username: <base64-encoded-username>
+  password: <base64-encoded-password>
+
+---
+# Reference secrets in deployments
+env:
+- name: DB_USERNAME
+  valueFrom:
+    secretKeyRef:
+      name: database-credentials
+      key: username
+- name: DB_PASSWORD
+  valueFrom:
+    secretKeyRef:
+      name: database-credentials
+      key: password
+</example>
+
+<example type="invalid">
+# BAD - Hardcoded credentials
+env:
+- name: DB_USERNAME
+  value: "admin"
+- name: DB_PASSWORD
+  value: "password123"  # NEVER DO THIS!
+- name: API_KEY
+  value: "sk-1234567890abcdef"  # SECURITY VIOLATION!
+</example>
+
+### Network Policies
+
+<example>
+# Always include network policies for traffic isolation
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: deny-all-default
+  namespace: production
+spec:
+  podSelector: {}
+  policyTypes:
+  - Ingress
+  - Egress
+
+---
+# Specific allow policy
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-web-to-api
+spec:
+  podSelector:
+    matchLabels:
+      app: api-server
+  policyTypes:
+  - Ingress
+  ingress:
+  - from:
+    - podSelector:
+        matchLabels:
+          app: web-frontend
+    ports:
+    - protocol: TCP
+      port: 8080
+</example>
+
+## Python Security Patterns
+
+### Input Validation
+
+<example>
+import re
+from typing import Optional
+from urllib.parse import urlparse
+
+def validate_namespace_name(name: str) -> str:
+    """Validate and sanitize Kubernetes namespace name."""
+    if not name:
+        raise ValueError("Namespace name cannot be empty")
+    
+    # Kubernetes naming constraints
+    if not re.match(r'^[a-z0-9]([-a-z0-9]*[a-z0-9])?$', name):
+        raise ValueError("Invalid namespace name format")
+    
+    if len(name) > 63:
+        raise ValueError("Namespace name too long")
+    
+    # Additional security: prevent reserved names
+    reserved_names = ['kube-system', 'kube-public', 'default']
+    if name in reserved_names:
+        raise ValueError(f"Cannot use reserved namespace: {name}")
+    
+    return name
+
+def validate_url(url: str) -> str:
+    """Validate URL to prevent injection attacks."""
+    try:
+        parsed = urlparse(url)
+        if parsed.scheme not in ['http', 'https']:
+            raise ValueError("Only HTTP/HTTPS URLs allowed")
+        
+        # Prevent localhost/internal network access
+        if parsed.hostname in ['localhost', '127.0.0.1', '::1']:
+            raise ValueError("Localhost URLs not permitted")
+        
+        return url
+    except Exception as e:
+        raise ValueError(f"Invalid URL: {e}")
+</example>
+
+### Secure Configuration
+
+<example>
+import os
+from pathlib import Path
+from cryptography.fernet import Fernet
+
+class SecureConfig:
+    """Secure configuration management."""
+    
+    def __init__(self):
+        self.config = {}
+        self._load_from_environment()
+        self._validate_required_config()
+    
+    def _load_from_environment(self):
+        """Load configuration from environment variables."""
+        # Required environment variables
+        required_vars = [
+            'OPENSHIFT_API_URL',
+            'SERVICE_ACCOUNT_TOKEN_PATH',
+            'TLS_CERT_PATH'
+        ]
+        
+        for var in required_vars:
+            value = os.environ.get(var)
+            if not value:
+                raise ValueError(f"Required environment variable not set: {var}")
+            self.config[var] = value
+    
+    def _validate_required_config(self):
+        """Validate configuration values."""
+        # Validate API URL
+        api_url = self.config.get('OPENSHIFT_API_URL')
+        if not api_url.startswith('https://'):
+            raise ValueError("OpenShift API URL must use HTTPS")
+        
+        # Validate file paths exist
+        token_path = Path(self.config.get('SERVICE_ACCOUNT_TOKEN_PATH'))
+        if not token_path.exists():
+            raise ValueError(f"Service account token file not found: {token_path}")
+        
+        cert_path = Path(self.config.get('TLS_CERT_PATH'))
+        if not cert_path.exists():
+            raise ValueError(f"TLS certificate file not found: {cert_path}")
+    
+    def get_secret(self, key: str) -> Optional[str]:
+        """Retrieve secret value securely."""
+        # In production, integrate with proper secret management
+        # (HashiCorp Vault, AWS Secrets Manager, etc.)
+        return self.config.get(key)
+</example>
+
+### Database Security
+
+<example>
+import psycopg2
+from psycopg2 import sql
+from typing import List, Dict, Any
+
+class SecureDatabase:
+    """Secure database operations with parameterized queries."""
+    
+    def __init__(self, connection_config: Dict[str, str]):
+        # Validate SSL requirement
+        if connection_config.get('sslmode') != 'require':
+            raise ValueError("Database connections must use SSL")
+        
+        self.conn = psycopg2.connect(**connection_config)
+    
+    def get_user_by_id(self, user_id: int) -> Optional[Dict[str, Any]]:
+        """Secure user lookup with parameterized query."""
+        with self.conn.cursor() as cursor:
+            # Use parameterized query to prevent SQL injection
+            cursor.execute(
+                "SELECT id, username, email, created_at FROM users WHERE id = %s",
+                (user_id,)
+            )
+            row = cursor.fetchone()
+            if row:
+                return {
+                    'id': row[0],
+                    'username': row[1],
+                    'email': row[2],
+                    'created_at': row[3]
+                }
+        return None
+    
+    def search_logs(self, namespace: str, severity: str) -> List[Dict[str, Any]]:
+        """Secure log search with input validation."""
+        # Validate inputs before using in query
+        if not re.match(r'^[a-z0-9-]+$', namespace):
+            raise ValueError("Invalid namespace format")
+        
+        allowed_severities = ['debug', 'info', 'warning', 'error', 'critical']
+        if severity not in allowed_severities:
+            raise ValueError(f"Invalid severity: {severity}")
+        
+        with self.conn.cursor() as cursor:
+            cursor.execute(
+                """
+                SELECT timestamp, namespace, severity, message 
+                FROM audit_logs 
+                WHERE namespace = %s AND severity = %s 
+                ORDER BY timestamp DESC 
+                LIMIT 1000
+                """,
+                (namespace, severity)
+            )
+            return [
+                {
+                    'timestamp': row[0],
+                    'namespace': row[1],
+                    'severity': row[2],
+                    'message': row[3]
+                }
+                for row in cursor.fetchall()
+            ]
+</example>
+
+## RBAC and Access Control
+
+### Service Account Best Practices
+
+<example>
+# Minimal RBAC for specific operations
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: pod-reader
+  namespace: monitoring
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  namespace: monitoring
+  name: pod-reader
+rules:
+- apiGroups: [""]
+  resources: ["pods"]
+  verbs: ["get", "list", "watch"]
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: read-pods
+  namespace: monitoring
+subjects:
+- kind: ServiceAccount
+  name: pod-reader
+  namespace: monitoring
+roleRef:
+  kind: Role
+  name: pod-reader
+  apiGroup: rbac.authorization.k8s.io
+</example>
+
+## Security Scanning Integration
+
+### Container Image Security
+
+<example>
+# Always specify image digests for reproducibility
+containers:
+- name: app
+  image: registry.redhat.io/ubi8/python-39@sha256:abc123...
+  
+  # Security scanning in CI/CD
+  # - Scan with Clair, Anchore, or Snyk
+  # - Block deployment of HIGH/CRITICAL vulnerabilities
+  # - Regular base image updates
+</example>
+
+## Monitoring and Alerting
+
+### Security Events
+
+<example>
+# Security-focused alerts for platform operations
+groups:
+- name: security-alerts
+  rules:
+  - alert: UnauthorizedAPIAccess
+    expr: rate(apiserver_audit_total{verb="create",objectRef_resource="secrets"}[5m]) > 0.1
+    for: 0s
+    labels:
+      severity: critical
+    annotations:
+      summary: "Unauthorized secret creation detected"
+      
+  - alert: PrivilegedContainerCreated
+    expr: increase(kube_pod_container_status_running{container=~".*privileged.*"}[5m]) > 0
+    for: 0s
+    labels:
+      severity: high
+    annotations:
+      summary: "Privileged container detected"
+      
+  - alert: UnencryptedTraffic
+    expr: rate(istio_request_total{security_policy="none"}[5m]) > 0
+    for: 1m
+    labels:
+      severity: warning
+    annotations:
+      summary: "Unencrypted traffic detected"
+</example>
+
+## Compliance Requirements
+
+- **SOC 2**: Implement access controls and audit logging
+- **GDPR**: Ensure data protection and privacy controls
+- **FIPS 140-2**: Use approved cryptographic modules
+- **Common Criteria**: Follow certified security configurations
+
+## Security Testing
+
+Every security control MUST include:
+- Unit tests for input validation
+- Integration tests for authentication/authorization
+- Penetration testing for network policies
+- Compliance scanning for configurations
+- Regular vulnerability assessments

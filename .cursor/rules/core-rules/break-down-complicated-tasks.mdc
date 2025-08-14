@@ -1,0 +1,80 @@
+---
+alwaysApply: true
+description: Breaks down complex tasks into manageable steps with clear deliverables
+globs: null
+---
+
+When I ask you to do a complex task, here's what I want you to do:
+1. Break down the task into some small number of discrete steps (maybe 3-6 steps).  Put those steps into a checklist file called CHECKLIST.txt, where each step has an empty box associated with it (like "[ ]").  Make sure the steps include checking your work.
+2. Then for each step N, create a STEP_N.txt file where you break down the Nth step into 2-4 smaller steps, with a concrete deliverable at the end.
+3. Then execute the steps in CHECKLIST.txt; for each step, look at STEP_N.txt and follow those steps.  Check your work.  When you're done, mark the box in CHECKLIST.txt indicating that you are done with the step.
+
+# Break Down Complicated Tasks Best Practices
+
+
+## Overview
+
+Breaks down complex tasks into manageable steps with clear deliverables
+
+
+## Core Concepts
+
+### Key Features
+- Feature 1: Description of what this feature does
+- Feature 2: How this improves workflow
+- Feature 3: Integration capabilities
+- Feature 4: Performance benefits
+
+### Common Use Cases
+1. **Use Case 1**: When you need to accomplish X
+2. **Use Case 2**: For scenarios requiring Y
+3. **Use Case 3**: To optimize Z processes
+
+### Best Practices
+- Always follow the principle of least privilege
+- Keep configurations version controlled
+- Monitor performance metrics
+- Implement proper error handling
+- Use consistent naming conventions
+
+## Advanced Topics
+
+### Performance Optimization
+
+When working with Break Down Complicated Tasks, consider these optimization strategies:
+- Cache frequently accessed data
+- Use batch operations where possible
+- Implement connection pooling
+- Monitor resource usage
+- Profile code to identify bottlenecks
+
+### Troubleshooting Guide
+
+Common issues and solutions:
+
+1. **Issue**: Configuration not loading
+   **Solution**: Check file paths and permissions
+
+2. **Issue**: Performance degradation
+   **Solution**: Review logs and increase resource limits
+
+3. **Issue**: Integration failures
+   **Solution**: Verify API versions and compatibility
+
+### Additional Resources
+
+- [Official Documentation](#)
+- [Community Forum](#)
+- [GitHub Repository](#)
+- [Tutorial Videos](#)
+- [Best Practices Guide](#)
+
+### Contributing
+
+Contributions are welcome! Please:
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Submit a pull request
+
+For more details, see CONTRIBUTING.md

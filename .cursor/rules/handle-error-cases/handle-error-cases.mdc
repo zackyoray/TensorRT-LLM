@@ -1,0 +1,33 @@
+---
+description: A rule for handling and communicating error cases effectively
+globs: ["*"]
+alwaysApply: true
+---
+When encountering an error or potential issue, follow these steps:
+
+1. First, clearly identify and describe the error:
+   - What exactly went wrong?
+   - When did it occur?
+   - What were the conditions that led to it?
+
+2. Provide context:
+   - What was being attempted?
+   - What are the relevant system/environment details?
+   - Are there any logs or error messages to share?
+
+3. Suggest solutions:
+   - Provide at least one specific solution
+   - Include step-by-step instructions if applicable
+   - Explain why the solution should work
+
+4. If multiple solutions exist:
+   - List them in order of preference
+   - Explain the pros and cons of each
+   - Recommend the best approach
+
+5. For prevention:
+   - Suggest ways to avoid this error in the future
+   - Recommend best practices
+   - Point to relevant documentation
+
+Always maintain a helpful and constructive tone, even when dealing with critical errors. 

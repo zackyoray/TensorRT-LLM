@@ -1,0 +1,460 @@
+---
+description: Static type checking with MyPy for Python code quality and early error detection
+globs: ["*.py", "*.pyi", "mypy.ini", "setup.cfg", "pyproject.toml"]
+alwaysApply: false
+---
+
+# MyPy Type Checking Best Practices
+
+## Overview
+
+MyPy is a static type checker for Python that helps catch type-related errors before runtime. By adding type annotations and running MyPy, you can improve code quality, documentation, and maintainability while preventing common bugs.
+
+## Core Principles
+
+- Use MyPy for static type checking to catch type-related errors early
+- Add comprehensive type annotations to function signatures and variables
+- Use typing module imports for complex type hints and generics
+- Configure MyPy with proper configuration files for project-specific settings
+- Handle optional types and None values with proper Union and Optional annotations
+- Use Protocol classes for structural typing and duck typing scenarios
+- Implement proper type checking for third-party libraries with stub files
+- Use mypy --strict mode for maximum type safety in critical codebases
+- Handle type errors systematically and avoid # type: ignore comments when possible
+- Integrate MyPy into CI/CD pipelines for automated type checking
+
+## Basic Type Annotations
+
+### Function Signatures
+
+```python
+from typing import List, Dict, Optional, Tuple, Union
+
+def greet(name: str, times: int = 1) -> str:
+    """Greet someone multiple times"""
+    return f"Hello, {name}! " * times
+
+def calculate_average(numbers: List[float]) -> float:
+    """Calculate average of a list of numbers"""
+    if not numbers:
+        return 0.0
+    return sum(numbers) / len(numbers)
+
+def parse_user_data(data: Dict[str, Union[str, int]]) -> Optional[Tuple[str, int]]:
+    """Parse user data and return name and age if valid"""
+    name = data.get("name")
+    age = data.get("age")
+    
+    if isinstance(name, str) and isinstance(age, int):
+        return (name, age)
+    return None
+
+# Variable annotations
+user_count: int = 0
+active_users: List[str] = []
+config: Dict[str, Union[str, int, bool]] = {
+    "debug": True,
+    "port": 8080,
+    "host": "localhost"
+}
+```
+
+### Class Type Annotations
+
+```python
+from typing import ClassVar, Final, Optional
+from datetime import datetime
+
+class User:
+    # Class variable
+    MAX_NAME_LENGTH: ClassVar[int] = 100
+    
+    # Instance variables
+    id: Final[int]  # Cannot be reassigned
+    name: str
+    email: Optional[str]
+    created_at: datetime
+    
+    def __init__(self, id: int, name: str, email: Optional[str] = None) -> None:
+        self.id = id
+        self.name = name
+        self.email = email
+        self.created_at = datetime.now()
+    
+    def get_display_name(self) -> str:
+        """Return name with email if available"""
+        if self.email:
+            return f"{self.name} <{self.email}>"
+        return self.name
+    
+    def update_email(self, new_email: str) -> None:
+        """Update user email"""
+        self.email = new_email
+```
+
+## Advanced Type Hints
+
+### Generics and TypeVar
+
+```python
+from typing import TypeVar, Generic, List, Callable, Iterator
+
+T = TypeVar('T')
+K = TypeVar('K')
+V = TypeVar('V')
+
+class Stack(Generic[T]):
+    """Generic stack implementation"""
+    
+    def __init__(self) -> None:
+        self._items: List[T] = []
+    
+    def push(self, item: T) -> None:
+        self._items.append(item)
+    
+    def pop(self) -> T:
+        if not self._items:
+            raise IndexError("pop from empty stack")
+        return self._items.pop()
+    
+    def peek(self) -> Optional[T]:
+        return self._items[-1] if self._items else None
+    
+    def __iter__(self) -> Iterator[T]:
+        return iter(reversed(self._items))
+
+# Bounded TypeVar
+Comparable = TypeVar('Comparable', bound='Comparable')
+
+class Comparable:
+    def __lt__(self, other: 'Comparable') -> bool:
+        raise NotImplementedError
+
+def get_max(items: List[Comparable]) -> Optional[Comparable]:
+    """Get maximum item from list"""
+    if not items:
+        return None
+    return max(items)
+```
+
+### Protocols and Structural Typing
+
+```python
+from typing import Protocol, runtime_checkable
+
+@runtime_checkable
+class Drawable(Protocol):
+    """Protocol for drawable objects"""
+    
+    def draw(self, canvas: 'Canvas') -> None: ...
+    
+    @property
+    def position(self) -> Tuple[float, float]: ...
+
+class Circle:
+    def __init__(self, x: float, y: float, radius: float) -> None:
+        self._x = x
+        self._y = y
+        self.radius = radius
+    
+    def draw(self, canvas: 'Canvas') -> None:
+        canvas.draw_circle(self._x, self._y, self.radius)
+    
+    @property
+    def position(self) -> Tuple[float, float]:
+        return (self._x, self._y)
+
+def render_shapes(shapes: List[Drawable], canvas: 'Canvas') -> None:
+    """Render all drawable shapes"""
+    for shape in shapes:
+        shape.draw(canvas)
+
+# Circle implements Drawable protocol without inheritance
+circle = Circle(10, 20, 5)
+assert isinstance(circle, Drawable)  # True at runtime
+```
+
+### Literal Types and TypedDict
+
+```python
+from typing import Literal, TypedDict, NotRequired
+from typing_extensions import TypeAlias
+
+# Literal types for specific values
+Status: TypeAlias = Literal["pending", "approved", "rejected"]
+HttpMethod: TypeAlias = Literal["GET", "POST", "PUT", "DELETE"]
+
+class UserData(TypedDict):
+    """Typed dictionary for user data"""
+    id: int
+    name: str
+    email: str
+    status: Status
+    metadata: NotRequired[Dict[str, str]]
+
+def process_request(method: HttpMethod, data: UserData) -> Dict[str, Any]:
+    """Process HTTP request with typed data"""
+    if method == "POST":
+        # Type checker knows data has all required fields
+        return {
+            "user_id": data["id"],
+            "message": f"Created user {data['name']}"
+        }
+    return {"message": "Invalid method"}
+
+# Usage
+user: UserData = {
+    "id": 123,
+    "name": "Alice",
+    "email": "alice@example.com",
+    "status": "approved"
+}
+result = process_request("POST", user)
+```
+
+## MyPy Configuration
+
+### pyproject.toml Configuration
+
+```toml
+[tool.mypy]
+# Global options
+python_version = "3.10"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+check_untyped_defs = true
+disallow_untyped_decorators = true
+no_implicit_optional = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+warn_no_return = true
+warn_unreachable = true
+strict_equality = true
+
+# Per-module options
+[[tool.mypy.overrides]]
+module = "tests.*"
+ignore_errors = true
+
+[[tool.mypy.overrides]]
+module = "third_party_lib.*"
+ignore_missing_imports = true
+```
+
+### mypy.ini Configuration
+
+```ini
+[mypy]
+python_version = 3.10
+warn_return_any = True
+warn_unused_configs = True
+disallow_untyped_defs = True
+disallow_incomplete_defs = True
+check_untyped_defs = True
+disallow_untyped_decorators = True
+no_implicit_optional = True
+warn_redundant_casts = True
+warn_unused_ignores = True
+warn_no_return = True
+warn_unreachable = True
+strict_equality = True
+
+# Import discovery
+namespace_packages = True
+explicit_package_bases = True
+mypy_path = $MYPY_CONFIG_FILE_DIR/src
+
+# Error output
+show_error_context = True
+show_column_numbers = True
+show_error_codes = True
+pretty = True
+
+# Incremental mode
+incremental = True
+cache_dir = .mypy_cache
+
+# Specific overrides
+[mypy-tests.*]
+ignore_errors = True
+
+[mypy-"third_party_lib.*"]
+ignore_missing_imports = True
+```
+
+## Handling Common Scenarios
+
+### Optional and None Handling
+
+```python
+from typing import Optional, Union
+
+def find_user(user_id: int) -> Optional[User]:
+    """Find user by ID, return None if not found"""
+    # Database lookup logic
+    return None  # or User instance
+
+def process_user(user_id: int) -> str:
+    """Process user with proper None handling"""
+    user = find_user(user_id)
+    
+    # Type narrowing with if statement
+    if user is not None:
+        # MyPy knows user is User here, not Optional[User]
+        return f"Processing {user.name}"
+    
+    return "User not found"
+
+# Using Union for multiple return types
+def parse_number(value: str) -> Union[int, float, str]:
+    """Parse string to number or return error message"""
+    try:
+        if "." in value:
+            return float(value)
+        return int(value)
+    except ValueError:
+        return f"Invalid number: {value}"
+
+# Type narrowing with isinstance
+result = parse_number("42.5")
+if isinstance(result, (int, float)):
+    # MyPy knows result is numeric here
+    doubled = result * 2
+else:
+    # MyPy knows result is str here
+    error_msg = result.upper()
+```
+
+### Overloading
+
+```python
+from typing import overload, Union, List
+
+@overload
+def process_items(items: str) -> List[str]: ...
+
+@overload
+def process_items(items: List[str]) -> List[str]: ...
+
+@overload
+def process_items(items: int) -> List[int]: ...
+
+def process_items(items: Union[str, List[str], int]) -> Union[List[str], List[int]]:
+    """Process different types of items"""
+    if isinstance(items, str):
+        return items.split(",")
+    elif isinstance(items, list):
+        return [item.strip() for item in items]
+    else:  # int
+        return list(range(items))
+
+# MyPy understands the return type based on input
+strings = process_items("a,b,c")  # List[str]
+strings2 = process_items(["x", "y"])  # List[str]
+numbers = process_items(5)  # List[int]
+```
+
+### Callback and Callable Types
+
+```python
+from typing import Callable, TypeVar, ParamSpec
+from functools import wraps
+
+P = ParamSpec('P')
+R = TypeVar('R')
+
+def retry(max_attempts: int = 3) -> Callable[[Callable[P, R]], Callable[P, Optional[R]]]:
+    """Decorator that retries function on failure"""
+    def decorator(func: Callable[P, R]) -> Callable[P, Optional[R]]:
+        @wraps(func)
+        def wrapper(*args: P.args, **kwargs: P.kwargs) -> Optional[R]:
+            for attempt in range(max_attempts):
+                try:
+                    return func(*args, **kwargs)
+                except Exception as e:
+                    if attempt == max_attempts - 1:
+                        print(f"Failed after {max_attempts} attempts: {e}")
+                        return None
+            return None
+        return wrapper
+    return decorator
+
+@retry(max_attempts=3)
+def fetch_data(url: str) -> Dict[str, Any]:
+    """Fetch data from URL"""
+    # Implementation
+    return {"data": "example"}
+
+# Type is preserved through decorator
+result = fetch_data("https://example.com")  # Optional[Dict[str, Any]]
+```
+
+## Integration with CI/CD
+
+### GitHub Actions Example
+
+```yaml
+name: Type Check
+
+on: [push, pull_request]
+
+jobs:
+  mypy:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.10'
+    - name: Install dependencies
+      run: |
+        pip install mypy
+        pip install -r requirements.txt
+        pip install types-requests types-redis  # Type stubs
+    - name: Run MyPy
+      run: |
+        mypy src/ --junit-xml=mypy-report.xml
+    - name: Upload MyPy report
+      if: always()
+      uses: actions/upload-artifact@v3
+      with:
+        name: mypy-report
+        path: mypy-report.xml
+```
+
+### Pre-commit Hook
+
+```yaml
+# .pre-commit-config.yaml
+repos:
+  - repo: https://github.com/pre-commit/mirrors-mypy
+    rev: v1.5.1
+    hooks:
+      - id: mypy
+        additional_dependencies: [types-all]
+        args: [--strict, --ignore-missing-imports]
+```
+
+## Best Practices
+
+### Do's
+- Start with gradual typing and increase strictness over time
+- Use type annotations for all public APIs
+- Enable strict mode for new projects
+- Keep type stubs updated for third-party libraries
+- Use reveal_type() for debugging type inference
+- Document complex type relationships
+- Use Protocol for defining interfaces
+
+### Don'ts
+- Don't use Any unless absolutely necessary
+- Don't ignore type errors without understanding them
+- Don't over-complicate types when simple ones suffice
+- Don't mix runtime and static type checking logic
+- Don't forget to type __init__ return as None
+- Don't use mutable default arguments in typed functions
+
+This comprehensive guide ensures effective use of MyPy for improving Python code quality through static type checking.

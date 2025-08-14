@@ -1,0 +1,86 @@
+---
+description: "Guidelines for writing comprehensive and maintainable tests in Java Spring Boot applications. Aligned with SonarQube's emphasis on test quality and coverage."
+globs: ["src/test/java/**/*.java"]
+alwaysApply: false
+---
+
+# Java Spring Boot Testing Guidelines
+
+- **Unit Tests:**
+    - **Location:** In `src/test/java/` within the same package as the class under test.
+    - **Framework:** Use JUnit 5.
+    - **Focus:** Test individual classes in isolation.
+    - **Mocking:** Use Mockito (`@Mock`, `@InjectMocks`, `Mockito.when/verify`) to mock all external dependencies.
+    - **Avoid Spring Context:** Do not load the Spring application context for true unit tests (`@ExtendWith(MockitoExtension.class)`).
+    - **Table-Driven Tests:** Suggest for methods with multiple input/output scenarios.
+- **Integration Tests:**
+    - **Focus:** Test interactions between multiple components or layers.
+    - **`@SpringBootTest`:** Use to load a full or partial Spring application context.
+    - **Slicing Tests:**
+        - `@WebMvcTest`: For testing web layer (controllers) with `MockMvc`.
+        - `@DataJpaTest`: For testing JPA repositories (with an in-memory or real database).
+        - `@RestClientTest`: For testing REST clients.
+    - **Testcontainers:** **Strongly recommend** using Testcontainers for external dependencies (databases, message queues, external APIs) to ensure isolated, reproducible test environments. (SonarQube: Values robust testing).
+    - **Transaction Management:** Use `@Transactional` in tests to ensure test data rollback.
+- **End-to-End Tests:**
+    - **Focus:** Test the entire system from an external client's perspective.
+    - Run against a deployed or fully integrated local environment.
+- **Assertions:** Prefer AssertJ for fluent and readable assertions (e.g., `assertThat(actual).isEqualTo(expected)`).
+- **Race Detection:** Be mindful of potential race conditions in tests, especially with shared test data.
+- **Test Coverage:** Aim for high, meaningful test coverage (e.g., 70-85% is a good target for critical paths). AI should remind developers of coverage metrics. (SonarQube: Integrates and reports on test coverage).
+
+<rule>
+  <name>java_spring_boot_testing_guidelines</name>
+  <description>Guidelines for writing comprehensive and maintainable tests in Java Spring Boot applications.</description>
+  <requirements>
+    <!-- Unit Tests -->
+    <requirement priority="high">
+      <description>Unit tests must be located in `src/test/java/` within the same package as the class under test.</description>
+    </requirement>
+    <requirement priority="high">
+      <description>Use JUnit 5 for testing framework.</description>
+    </requirement>
+    <requirement priority="high">
+      <description>Focus unit tests on individual classes in isolation.</description>
+    </requirement>
+    <requirement priority="high">
+      <description>Use Mockito (@Mock, @InjectMocks) to mock all external dependencies for unit tests.</description>
+    </requirement>
+    <requirement priority="critical">
+      <description>Do not load the Spring application context for true unit tests (@ExtendWith(MockitoExtension.class)).</description>
+    </requirement>
+    <requirement priority="medium">
+      <description>Suggest table-driven tests for methods with multiple input/output scenarios.</description>
+    </requirement>
+    <!-- Integration tests -->
+    <requirement priority="high">
+      <description>Integration tests must focus on interactions between multiple components or layers.</description>
+    </requirement>
+    <requirement priority="high">
+      <description>Use `@SpringBootTest` to load a full or partial Spring application context for integration tests.</description>
+    </requirement>
+    <requirement priority="high">
+      <description>Utilize slicing tests like `@WebMvcTest`, `@DataJpaTest`, `@RestClientTest` for specific layer testing.</description>
+    </requirement>
+    <requirement priority="critical">
+      <description>Strongly recommend using Testcontainers for external dependencies in integration tests to ensure isolated, reproducible environments.</description>
+    </requirement>
+    <requirement priority="high">
+      <description>Use `@Transactional` in integration tests to ensure test data rollback.</description>
+    </requirement>
+    <!-- End-to-End Tests -->
+    <requirement priority="medium">
+      <description>End-to-End tests should focus on testing the entire system from an external client's perspective.</description>
+    </requirement>
+    <!-- General Test Practices -->
+    <requirement priority="high">
+      <description>Prefer AssertJ for fluent and readable assertions (e.g., assertThat(actual).isEqualTo(expected)).</description>
+    </requirement>
+    <requirement priority="medium">
+      <description>Be mindful of potential race conditions in tests, especially with shared test data.</description>
+    </requirement>
+    <requirement priority="medium">
+      <description>Aim for high, meaningful test coverage (e.g., 70-85% for critical paths).</description>
+    </requirement>
+  </requirements>
+</rule>

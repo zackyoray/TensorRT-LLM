@@ -1,0 +1,101 @@
+---
+description: FastAPI framework rules for building high-performance async APIs with
+  automatic documentation, type hints, and modern Python features.
+globs:
+- '*.py'
+alwaysApply: false
+---
+- Use FastAPI for building modern, fast, and scalable REST APIs with automatic documentation.
+- Leverage Python type hints for automatic request/response validation and OpenAPI schema generation.
+- Implement async/await patterns for optimal performance with I/O operations.
+- Use Pydantic models for request/response data validation and serialization.
+- Follow REST API design principles with proper HTTP methods and status codes.
+- Implement proper dependency injection using FastAPI's Depends system.
+- Use middleware for cross-cutting concerns like CORS, authentication, and logging.
+- Structure applications with routers for modular organization.
+- Implement comprehensive error handling with custom exception handlers.
+- Use FastAPI's built-in security utilities for authentication and authorization.
+
+## FastAPI API Development Best Practices
+
+FastAPI is a modern web framework for building APIs with Python 3.7+ based on standard Python type hints. It provides automatic API documentation, validation, and high performance.
+
+### 1. Project Structure and Organization
+
+- **Modular Design:** Organize code with routers, models, and services
+- **Configuration Management:** Use environment variables and settings classes
+- **Dependency Management:** Structure dependencies in separate modules
+- **Database Integration:** Use SQLAlchemy or other ORMs effectively
+- **Testing Structure:** Organize tests with proper fixtures and mocks
+
+### 2. API Design and Documentation
+
+- **OpenAPI Integration:** Leverage automatic documentation generation
+- **Response Models:** Define clear response schemas with Pydantic
+- **Request Validation:** Use Pydantic models for request body validation
+- **Path Parameters:** Define typed path and query parameters
+- **API Versioning:** Implement proper API versioning strategies
+
+### 3. Async Programming
+
+- **Async/Await:** Use async functions for I/O-bound operations
+- **Database Operations:** Use async database drivers and ORMs
+- **External APIs:** Make async HTTP requests to external services
+- **Background Tasks:** Use FastAPI's background tasks for non-blocking operations
+- **Connection Pooling:** Configure proper async connection pools
+
+### 4. Data Validation and Serialization
+
+- **Pydantic Models:** Create comprehensive data models with validation
+- **Custom Validators:** Implement custom validation logic when needed
+- **Type Hints:** Use advanced type hints for complex data structures
+- **Response Models:** Define clear response schemas for all endpoints
+- **Error Models:** Create standardized error response models
+
+### 5. Security Implementation
+
+- **Authentication:** Implement JWT, OAuth2, or API key authentication
+- **Authorization:** Use scopes and permissions for fine-grained access control
+- **HTTPS Enforcement:** Ensure all production traffic uses HTTPS
+- **CORS Configuration:** Configure CORS properly for frontend integration
+- **Rate Limiting:** Implement rate limiting to prevent abuse
+
+### 6. Database Integration
+
+- **SQLAlchemy Integration:** Use SQLAlchemy with FastAPI effectively
+- **Async Database Access:** Use async database drivers for better performance
+- **Migration Management:** Implement proper database migration strategies
+- **Connection Management:** Configure database connection pools
+- **Query Optimization:** Use efficient database queries and indexing
+
+### 7. Testing Strategies
+
+- **Test Client:** Use FastAPI's TestClient for API testing
+- **Async Testing:** Test async endpoints with pytest-asyncio
+- **Database Testing:** Use test databases and fixtures
+- **Mock External Services:** Mock external API calls and services
+- **Integration Testing:** Test complete API workflows
+
+### 8. Performance Optimization
+
+- **Async Operations:** Use async/await for I/O-bound operations
+- **Database Optimization:** Optimize database queries and connections
+- **Caching:** Implement caching strategies for frequently accessed data
+- **Response Compression:** Use compression middleware for large responses
+- **Static File Serving:** Use appropriate static file serving strategies
+
+### 9. Error Handling and Logging
+
+- **Custom Exception Handlers:** Create centralized error handling
+- **HTTP Status Codes:** Use appropriate status codes for different scenarios
+- **Error Response Format:** Maintain consistent error response structure
+- **Logging Strategy:** Implement comprehensive logging for debugging
+- **Monitoring Integration:** Integrate with monitoring and alerting systems
+
+### 10. Deployment and Production
+
+- **ASGI Servers:** Use Uvicorn, Gunicorn, or Hypercorn for production
+- **Container Deployment:** Create efficient Docker containers
+- **Environment Configuration:** Use environment-specific settings
+- **Health Checks:** Implement health check endpoints
+- **Load Balancing:** Configure load balancing for high availability

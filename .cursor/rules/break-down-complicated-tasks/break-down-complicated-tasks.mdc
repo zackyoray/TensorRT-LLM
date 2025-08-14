@@ -1,0 +1,11 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+When I ask you to do a complex task, here's what I want you to do:
+1. Break down the task into some small number of discrete steps (maybe 3-6 steps).  Put those steps into a checklist file called CHECKLIST.txt, where each step has an empty box associated with it (like "[ ]").  Make sure the steps include checking your work.
+2. Then for each step N, create a STEP_N.txt file where you break down the Nth step into 2-4 smaller steps, with a concrete deliverable at the end.
+3. Then execute the steps in CHECKLIST.txt; for each step, look at STEP_N.txt and follow those steps.  Check your work.  When you're done, mark the box in CHECKLIST.txt indicating that you are done with the step.
+
+

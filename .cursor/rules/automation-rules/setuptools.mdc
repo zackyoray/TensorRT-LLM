@@ -1,0 +1,445 @@
+---
+description: Python package development and distribution with setuptools configuration best practices
+globs: ["setup.py", "setup.cfg", "pyproject.toml", "**/setup.py"]
+alwaysApply: false
+---
+
+# Setuptools Best Practices
+
+## Overview
+
+Setuptools is the de facto standard for Python package development and distribution. This guide covers best practices for creating maintainable, distributable Python packages using modern setuptools configurations.
+
+## Core Principles
+
+- Use declarative configuration over imperative setup.py code
+- Prefer pyproject.toml for modern Python packaging
+- Include comprehensive metadata for package discovery
+- Follow PEP standards for packaging (PEP 517, PEP 518, PEP 621)
+- Implement proper dependency management
+- Configure automated testing and distribution
+
+## Package Structure
+
+### Modern Project Layout
+
+```
+my_package/
+├── pyproject.toml          # Modern build configuration
+├── setup.cfg               # Legacy but still supported
+├── setup.py                # Minimal shim for editable installs
+├── README.md               # Project documentation
+├── LICENSE                 # License file
+├── MANIFEST.in             # Additional files to include
+├── src/                    # Source layout (recommended)
+│   └── my_package/
+│       ├── __init__.py
+│       ├── main.py
+│       └── utils.py
+├── tests/                  # Test directory
+│   ├── __init__.py
+│   └── test_main.py
+└── docs/                   # Documentation
+```
+
+## Configuration Examples
+
+### Modern pyproject.toml Configuration
+
+```toml
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "my-awesome-package"
+version = "1.0.0"
+description = "A comprehensive example package"
+readme = "README.md"
+license = {text = "MIT"}
+authors = [
+    {name = "Your Name", email = "you@example.com"},
+]
+maintainers = [
+    {name = "Maintainer Name", email = "maintainer@example.com"},
+]
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+]
+requires-python = ">=3.8"
+dependencies = [
+    "requests>=2.28.0",
+    "click>=8.0.0",
+    "pydantic>=2.0.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0.0",
+    "pytest-cov>=4.0.0",
+    "black>=22.0.0",
+    "mypy>=1.0.0",
+    "ruff>=0.1.0",
+]
+docs = [
+    "sphinx>=5.0.0",
+    "sphinx-rtd-theme>=1.0.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/yourusername/my-package"
+Documentation = "https://my-package.readthedocs.io"
+Repository = "https://github.com/yourusername/my-package.git"
+Issues = "https://github.com/yourusername/my-package/issues"
+
+[project.scripts]
+my-command = "my_package.main:cli"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
+include = ["my_package*"]
+exclude = ["tests*"]
+
+[tool.setuptools.package-data]
+my_package = ["data/*.json", "templates/*.html"]
+```
+
+### Entry Points Configuration
+
+```toml
+[project.entry-points."my_package.plugins"]
+plugin1 = "my_package.plugins:Plugin1"
+plugin2 = "my_package.plugins:Plugin2"
+
+[project.entry-points.console_scripts]
+my-cli = "my_package.cli:main"
+my-tool = "my_package.tools:run"
+```
+
+### Minimal setup.py for Compatibility
+
+```python
+#!/usr/bin/env python
+"""Minimal setup.py for backwards compatibility and editable installs."""
+from setuptools import setup
+
+if __name__ == "__main__":
+    setup()
+```
+
+## Dependency Management
+
+### Install Requirements
+
+```toml
+# Basic dependencies
+dependencies = [
+    "numpy>=1.20.0,<2.0.0",     # Version range
+    "pandas~=1.3.0",            # Compatible release
+    "requests[socks]>=2.28.0",  # With extras
+    "click>=8.0.0",             # Minimum version
+]
+
+# Platform-specific dependencies
+dependencies = [
+    "pywin32>=300; sys_platform == 'win32'",
+    "uvloop>=0.17.0; sys_platform != 'win32'",
+]
+```
+
+### Development Dependencies
+
+```python
+# In setup.cfg or pyproject.toml
+[options.extras_require]
+dev = 
+    pytest>=7.0.0
+    pytest-cov>=4.0.0
+    pytest-mock>=3.10.0
+    black>=22.0.0
+    flake8>=6.0.0
+    mypy>=1.0.0
+test = 
+    pytest>=7.0.0
+    pytest-cov>=4.0.0
+docs = 
+    sphinx>=5.0.0
+    sphinx-rtd-theme>=1.0.0
+all = 
+    %(dev)s
+    %(docs)s
+```
+
+## Version Management
+
+### Dynamic Version from File
+
+```toml
+[project]
+name = "my-package"
+dynamic = ["version"]
+
+[tool.setuptools.dynamic]
+version = {attr = "my_package.__version__"}
+```
+
+### Version File (src/my_package/__init__.py)
+
+```python
+"""My Package - A comprehensive example."""
+__version__ = "1.0.0"
+__author__ = "Your Name"
+__email__ = "you@example.com"
+
+from .main import MyClass, my_function
+
+__all__ = ["MyClass", "my_function", "__version__"]
+```
+
+## Package Discovery
+
+### Automatic Package Finding
+
+```python
+# setup.cfg approach
+[options]
+packages = find:
+package_dir = 
+    = src
+
+[options.packages.find]
+where = src
+include = my_package*
+exclude = 
+    tests
+    tests.*
+    docs
+    docs.*
+```
+
+### Explicit Package Listing
+
+```toml
+[tool.setuptools]
+packages = [
+    "my_package",
+    "my_package.submodule1",
+    "my_package.submodule2",
+    "my_package.utils",
+]
+```
+
+## Data Files Inclusion
+
+### MANIFEST.in Example
+
+```text
+# Include documentation
+include README.md
+include LICENSE
+include CHANGELOG.md
+
+# Include data files
+recursive-include src/my_package/data *.json *.csv
+recursive-include src/my_package/templates *.html *.jinja2
+
+# Include test files in source distributions
+recursive-include tests *.py *.json
+
+# Exclude unnecessary files
+global-exclude *.pyc
+global-exclude __pycache__
+global-exclude .DS_Store
+prune .github
+prune docs/_build
+```
+
+### Package Data Configuration
+
+```toml
+[tool.setuptools.package-data]
+my_package = [
+    "data/*.json",
+    "data/*.csv", 
+    "templates/*.html",
+    "static/**/*",
+]
+
+[tool.setuptools.exclude-package-data]
+"*" = [
+    "tests/*",
+    "*.pyc",
+    "__pycache__/*",
+]
+```
+
+## Build and Distribution
+
+### Building Packages
+
+```bash
+# Install build tools
+pip install --upgrade build twine
+
+# Build source and wheel distributions
+python -m build
+
+# Check distribution files
+twine check dist/*
+
+# Upload to TestPyPI first
+twine upload --repository testpypi dist/*
+
+# Upload to PyPI
+twine upload dist/*
+```
+
+### GitHub Actions for Automated Publishing
+
+```yaml
+name: Publish Package
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.x'
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install build twine
+    - name: Build package
+      run: python -m build
+    - name: Publish to PyPI
+      env:
+        TWINE_USERNAME: __token__
+        TWINE_PASSWORD: ${{ secrets.PYPI_API_TOKEN }}
+      run: twine upload dist/*
+```
+
+## Testing Configuration
+
+### Pytest Integration
+
+```toml
+[tool.pytest.ini_options]
+minversion = "7.0"
+addopts = [
+    "-ra",
+    "--strict-markers",
+    "--cov=my_package",
+    "--cov-report=term-missing",
+    "--cov-report=html",
+]
+testpaths = ["tests"]
+python_files = ["test_*.py", "*_test.py"]
+```
+
+### Tox Configuration
+
+```ini
+[tox]
+envlist = py{38,39,310,311}, lint, docs
+isolated_build = True
+
+[testenv]
+deps = 
+    pytest>=7.0.0
+    pytest-cov>=4.0.0
+commands = 
+    pytest {posargs}
+
+[testenv:lint]
+deps = 
+    black
+    flake8
+    mypy
+commands = 
+    black --check src tests
+    flake8 src tests
+    mypy src
+
+[testenv:docs]
+deps = 
+    sphinx
+    sphinx-rtd-theme
+commands = 
+    sphinx-build -W -b html docs docs/_build/html
+```
+
+## Best Practices
+
+### Do's
+- Always include comprehensive metadata
+- Use semantic versioning (MAJOR.MINOR.PATCH)
+- Pin dependencies appropriately
+- Include classifiers for better discoverability
+- Test package installation in clean environments
+- Use src/ layout for better testing isolation
+- Include type hints and py.typed marker
+- Document all public APIs
+
+### Don'ts
+- Don't use setup.py for configuration (use pyproject.toml)
+- Don't include test files in distributions (unless necessary)
+- Don't use relative imports in packages
+- Don't forget to update version numbers
+- Don't include sensitive data in packages
+- Don't use deprecated setuptools features
+
+## Migration from setup.py
+
+### Converting setup.py to pyproject.toml
+
+```python
+# Old setup.py
+from setuptools import setup, find_packages
+
+setup(
+    name="my-package",
+    version="1.0.0",
+    packages=find_packages(),
+    install_requires=[
+        "requests>=2.28.0",
+        "click>=8.0.0",
+    ],
+)
+```
+
+Becomes:
+
+```toml
+# New pyproject.toml
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "my-package"
+version = "1.0.0"
+dependencies = [
+    "requests>=2.28.0",
+    "click>=8.0.0",
+]
+```
+
+This comprehensive guide ensures proper package structure, configuration, and distribution practices for Python projects using setuptools.

@@ -1,0 +1,39 @@
+---
+description: "Core principles for all Java Spring Boot code generation and review. Adherence to general SonarQube clean code principles."
+globs: 
+alwaysApply: true
+---
+
+# Java Spring Boot Core Development Principles
+
+- **Simplicity (KISS):** Always favor the simplest possible, idiomatic Java/Spring Boot solution that meets the requirements. Avoid over-engineering, unnecessary complexity, or excessive abstraction. (SonarQube: Avoid complex code, high cyclomatic complexity).
+- **DRY (Don't Repeat Yourself):** Identify and abstract repetitive code into reusable classes, methods, or Spring components. Eliminate duplicate code blocks. (SonarQube: Avoid duplication, "DRY is violated").
+- **YAGNI (You Aren't Gonna Need It):** Do not generate or suggest code for functionality or complexity not explicitly required by the current task. Focus on immediate needs.
+- **Clarity and Readability:** Ensure all Java code is highly readable, explicit, and easy to understand. Use meaningful names and follow consistent formatting. (SonarQube: Maintainability, code readability metrics).
+- **Idiomatic Java & Spring Boot:** Generate code that leverages Java's object-oriented features, robust type system, and exception handling. Utilize Spring Boot's conventions, annotations, and auto-configuration effectively, rather than mimicking patterns from other languages or frameworks where Spring provides better alternatives.
+- **SonarQube Alignment:** Always aim to produce code that would pass SonarQube's default quality checks for maintainability, reliability, and security. Consider static analysis tool warnings as critical feedback.
+
+<rule>
+  <name>java_spring_boot_core_development_principles</name>
+  <description>Core principles for all Java Spring Boot code generation and review.</description>
+  <requirements>
+    <requirement priority="critical">
+      <description>Favor the simplest possible, idiomatic Java/Spring Boot solution (KISS).</description>
+    </requirement>
+    <requirement priority="critical">
+      <description>Identify and abstract repetitive code to eliminate duplication (DRY).</description>
+    </requirement>
+    <requirement priority="high">
+      <description>Do not generate code for functionality not explicitly required (YAGNI).</description>
+    </requirement>
+    <requirement priority="critical">
+      <description>Ensure all Java code is highly readable, explicit, and easy to understand.</description>
+    </requirement>
+    <requirement priority="high">
+      <description>Leverage Java's features and Spring Boot's conventions effectively (Idiomatic Java & Spring Boot).</description>
+    </requirement>
+    <requirement priority="critical">
+      <description>Produce code that would pass SonarQube's default quality checks for maintainability, reliability, and security.</description>
+    </requirement>
+  </requirements>
+</rule>

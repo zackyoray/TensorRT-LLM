@@ -1,0 +1,122 @@
+---
+alwaysApply: false
+description: Flask microframework rules for building lightweight web applications
+  with flexibility and simplicity.
+globs:
+- '*.py'
+---
+
+- Use Flask for lightweight web applications and microservices with minimal overhead.
+- Follow Flask's request-response cycle and application context patterns.
+- Implement proper routing with blueprints for modular application structure.
+- Use Flask-WTF for secure form handling and CSRF protection.
+- Leverage Flask extensions for common functionality (SQLAlchemy, Login, etc.).
+- Implement proper error handling with custom error pages and logging.
+- Use Jinja2 templating effectively with template inheritance.
+- Structure applications with blueprints and application factories.
+- Implement secure session management and authentication.
+- Follow Flask security best practices for production deployment.
+
+## Flask Web Development Best Practices
+
+Flask is a lightweight WSGI web framework that provides flexibility and simplicity for web development.
+
+### 1. Application Structure
+- **Application Factory:** Use application factory pattern for configuration
+- **Blueprints:** Organize functionality with Flask blueprints
+- **Configuration:** Manage configuration with environment-specific files
+- **Extensions:** Use Flask extensions for common functionality
+
+### 2. Routing and Views
+- **URL Rules:** Define clear and RESTful URL patterns
+- **View Functions:** Keep view functions focused and simple
+- **Request Handling:** Validate and process request data properly
+- **Response Types:** Return appropriate response types and status codes
+
+### 3. Templates and Static Files
+- **Jinja2 Templates:** Use template inheritance and macros
+- **Static Files:** Organize CSS, JavaScript, and images properly
+- **Template Security:** Escape user content and prevent XSS
+- **Asset Management:** Use tools for asset compilation and optimization
+
+### 4. Database Integration
+- **SQLAlchemy:** Use Flask-SQLAlchemy for database operations
+- **Migration:** Implement database migrations with Flask-Migrate
+- **Connection Management:** Handle database connections properly
+- **Query Optimization:** Write efficient database queries
+
+### 5. Security Implementation
+- **Authentication:** Implement user authentication with Flask-Login
+- **CSRF Protection:** Use Flask-WTF for CSRF protection
+- **Session Security:** Configure secure session management
+- **Input Validation:** Validate and sanitize all user input
+
+# Flask Best Practices
+
+
+## Overview
+
+Flask microframework rules for building lightweight web applications with flexibility and simplicity.
+
+
+## Core Concepts
+
+### Key Features
+- Feature 1: Description of what this feature does
+- Feature 2: How this improves workflow
+- Feature 3: Integration capabilities
+- Feature 4: Performance benefits
+
+### Common Use Cases
+1. **Use Case 1**: When you need to accomplish X
+2. **Use Case 2**: For scenarios requiring Y
+3. **Use Case 3**: To optimize Z processes
+
+### Best Practices
+- Always follow the principle of least privilege
+- Keep configurations version controlled
+- Monitor performance metrics
+- Implement proper error handling
+- Use consistent naming conventions
+
+## Advanced Topics
+
+### Performance Optimization
+
+When working with Flask, consider these optimization strategies:
+- Cache frequently accessed data
+- Use batch operations where possible
+- Implement connection pooling
+- Monitor resource usage
+- Profile code to identify bottlenecks
+
+### Troubleshooting Guide
+
+Common issues and solutions:
+
+1. **Issue**: Configuration not loading
+   **Solution**: Check file paths and permissions
+
+2. **Issue**: Performance degradation
+   **Solution**: Review logs and increase resource limits
+
+3. **Issue**: Integration failures
+   **Solution**: Verify API versions and compatibility
+
+### Additional Resources
+
+- [Official Documentation](#)
+- [Community Forum](#)
+- [GitHub Repository](#)
+- [Tutorial Videos](#)
+- [Best Practices Guide](#)
+
+### Contributing
+
+Contributions are welcome! Please:
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Submit a pull request
+
+For more details, see CONTRIBUTING.md

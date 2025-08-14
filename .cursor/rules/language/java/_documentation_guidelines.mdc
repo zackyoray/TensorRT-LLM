@@ -1,0 +1,49 @@
+---
+description: "Guidelines for code documentation (Javadoc, comments, README) in Java Spring Boot applications. Ensures adherence to common documentation standards."
+globs: ["src/main/java/**/*.java", "README.md"]
+alwaysApply: false
+---
+
+# Java Spring Boot Code Documentation Guidelines
+
+- **Javadoc for Public API:**
+    - **Requirement:** Every public class, interface, method, and field **must** have a Javadoc comment directly above its declaration. (SonarQube: Checks for missing Javadoc).
+    - **Content:**
+        - The first sentence should be a concise summary.
+        - Methods: Document purpose, parameters (`@param`), return values (`@return`), and thrown exceptions (`@throws`).
+        - Classes/Interfaces: Explain the type's purpose, its main responsibilities, and any significant design considerations.
+        - Fields: Describe the purpose of instance variables.
+- **Internal Comments:**
+    - Use sparingly for self-explanatory code.
+    - **Crucially:** Explain *why* complex or non-obvious code is written in a particular way, not just *what* it does.
+    - Document design decisions, trade-offs, and complex algorithms or business rules.
+    - Use `TODO`, `FIXME`, `BUG` markers for actionable items.
+- **`README.md`:**
+    - **Requirement:** Ensure a comprehensive `README.md` at the project root.
+    - **Content:** Include a project overview, how to build, run, test, and contribute. Explain key architectural decisions, technologies used, and deployment instructions.
+- **Diagrams:** Suggest generating architectural diagrams (e.g., C4 model, sequence diagrams) for complex interactions or system overviews to aid documentation.
+
+<rule>
+  <name>java_spring_boot_code_documentation_guidelines</name>
+  <description>Guidelines for code documentation (Javadoc, comments, README) in Java Spring Boot applications.</description>
+  <requirements>
+    <requirement priority="critical">
+      <description>Every public class, interface, method, and field must have a Javadoc comment.</description>
+    </requirement>
+    <requirement priority="high">
+      <description>Javadoc content for methods must document purpose, parameters, return values, and thrown exceptions.</description>
+    </requirement>
+    <requirement priority="high">
+      <description>Javadoc content for classes/interfaces must explain purpose, responsibilities, and design considerations.</description>
+    </requirement>
+    <requirement priority="medium">
+      <description>Use internal comments sparingly, primarily to explain 'why' complex or non-obvious code is written.</description>
+    </requirement>
+    <requirement priority="high">
+      <description>Ensure a comprehensive README.md at the project root, including build, run, test, and contribution instructions.</description>
+    </requirement>
+    <requirement priority="low">
+      <description>Suggest generating architectural diagrams for complex interactions or system overviews.</description>
+    </requirement>
+  </requirements>
+</rule>

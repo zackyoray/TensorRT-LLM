@@ -1,0 +1,719 @@
+# LlamaIndex RAG Best Practices
+
+## Overview
+
+LlamaIndex (formerly GPT Index) is a data framework for building Retrieval-Augmented Generation (RAG) applications. It provides tools to ingest, structure, and access private or domain-specific data for use with Large Language Models (LLMs), enabling context-aware AI applications that can reason over your own data.
+
+## Core Principles
+
+- Use LlamaIndex for building sophisticated RAG applications with document indexing and retrieval
+- Implement proper document loading and preprocessing with appropriate text splitters
+- Configure vector stores and embedding models for optimal semantic search performance
+- Use appropriate index types (VectorStoreIndex, TreeIndex, ListIndex) based on use case requirements
+- Implement query engines with proper retrieval and response synthesis strategies
+- Use prompt templates and response synthesizers for consistent and relevant outputs
+- Configure metadata filtering and semantic search for enhanced retrieval precision
+- Implement proper evaluation metrics for RAG system performance assessment
+- Use LlamaIndex's agent framework for complex multi-step reasoning and tool use
+- Monitor retrieval quality and implement optimization strategies for production systems
+
+## Installation and Setup
+
+### Basic Installation
+
+```bash
+# Core installation
+pip install llama-index
+
+# With specific vector stores
+pip install llama-index-vector-stores-chroma
+pip install llama-index-vector-stores-pinecone
+pip install llama-index-vector-stores-weaviate
+
+# With specific LLMs
+pip install llama-index-llms-openai
+pip install llama-index-llms-anthropic
+pip install llama-index-llms-huggingface
+```
+
+### Environment Configuration
+
+```python
+import os
+from llama_index.core import Settings
+from llama_index.llms.openai import OpenAI
+from llama_index.embeddings.openai import OpenAIEmbedding
+from llama_index.core.node_parser import SentenceSplitter
+
+# Configure global settings
+Settings.llm = OpenAI(model="gpt-4", temperature=0)
+Settings.embed_model = OpenAIEmbedding(model="text-embedding-3-small")
+Settings.node_parser = SentenceSplitter(chunk_size=512, chunk_overlap=20)
+Settings.num_output = 512
+Settings.context_window = 4096
+
+# Set API keys
+os.environ["OPENAI_API_KEY"] = "your-api-key"
+```
+
+## Document Loading and Processing
+
+### Comprehensive Document Loading
+
+```python
+from llama_index.core import SimpleDirectoryReader, Document
+from llama_index.readers.file import (
+    PDFReader,
+    DocxReader,
+    UnstructuredReader,
+    PandasCSVReader
+)
+from pathlib import Path
+import pandas as pd
+
+class DocumentProcessor:
+    """Comprehensive document processing for LlamaIndex."""
+    
+    def __init__(self):
+        self.file_extractors = {
+            ".pdf": PDFReader(),
+            ".docx": DocxReader(),
+            ".csv": PandasCSVReader(),
+        }
+    
+    def load_documents(self, data_dir: str) -> list[Document]:
+        """Load documents from directory with multiple formats."""
+        # Load with custom extractors
+        reader = SimpleDirectoryReader(
+            input_dir=data_dir,
+            file_extractor=self.file_extractors,
+            recursive=True,
+            filename_as_id=True,
+            required_exts=[".pdf", ".docx", ".txt", ".md", ".csv"]
+        )
+        
+        documents = reader.load_data()
+        
+        # Add metadata to documents
+        for doc in documents:
+            # Extract filename and path metadata
+            file_path = Path(doc.doc_id)
+            doc.metadata.update({
+                "file_name": file_path.name,
+                "file_type": file_path.suffix,
+                "category": file_path.parent.name,
+                "source": str(file_path),
+            })
+        
+        return documents
+    
+    def create_documents_from_dataframe(self, df: pd.DataFrame, 
+                                      text_column: str,
+                                      metadata_columns: list) -> list[Document]:
+        """Create documents from pandas DataFrame."""
+        documents = []
+        
+        for idx, row in df.iterrows():
+            # Create document with metadata
+            doc = Document(
+                text=str(row[text_column]),
+                metadata={col: row[col] for col in metadata_columns},
+                doc_id=f"df_row_{idx}"
+            )
+            documents.append(doc)
+        
+        return documents
+
+# Usage
+processor = DocumentProcessor()
+documents = processor.load_documents("./data")
+print(f"Loaded {len(documents)} documents")
+```
+
+### Advanced Text Splitting
+
+```python
+from llama_index.core.node_parser import (
+    SentenceSplitter,
+    HierarchicalNodeParser,
+    SemanticSplitterNodeParser
+)
+from llama_index.core.schema import TextNode
+
+def create_semantic_nodes(documents, embed_model):
+    """Create semantically coherent nodes from documents."""
+    # Semantic splitting based on embedding similarity
+    semantic_parser = SemanticSplitterNodeParser(
+        buffer_size=1,
+        breakpoint_percentile_threshold=75,
+        embed_model=embed_model
+    )
+    
+    semantic_nodes = semantic_parser.get_nodes_from_documents(documents)
+    
+    # Add node relationships
+    for i, node in enumerate(semantic_nodes):
+        if i > 0:
+            node.relationships["prev"] = semantic_nodes[i-1].node_id
+        if i < len(semantic_nodes) - 1:
+            node.relationships["next"] = semantic_nodes[i+1].node_id
+    
+    return semantic_nodes
+
+# Hierarchical parsing for long documents
+def create_hierarchical_nodes(documents):
+    """Create hierarchical nodes for better context."""
+    hierarchical_parser = HierarchicalNodeParser.from_defaults(
+        chunk_sizes=[2048, 512, 128],
+        chunk_overlap=20
+    )
+    
+    nodes = hierarchical_parser.get_nodes_from_documents(documents)
+    return nodes
+```
+
+## Index Creation and Management
+
+### Vector Store Index
+
+```python
+from llama_index.core import VectorStoreIndex, StorageContext
+from llama_index.vector_stores.chroma import ChromaVectorStore
+from llama_index.core.indices.loading import load_index_from_storage
+import chromadb
+
+class IndexManager:
+    """Manage different types of indices."""
+    
+    def __init__(self, persist_dir="./storage"):
+        self.persist_dir = persist_dir
+        
+    def create_vector_index(self, documents, index_id="default"):
+        """Create a vector store index with persistence."""
+        # Initialize Chroma
+        db = chromadb.PersistentClient(path=f"{self.persist_dir}/chroma")
+        chroma_collection = db.get_or_create_collection(index_id)
+        
+        # Create vector store
+        vector_store = ChromaVectorStore(chroma_collection=chroma_collection)
+        storage_context = StorageContext.from_defaults(
+            vector_store=vector_store
+        )
+        
+        # Create index
+        index = VectorStoreIndex.from_documents(
+            documents,
+            storage_context=storage_context,
+            show_progress=True
+        )
+        
+        # Persist index
+        index.storage_context.persist(persist_dir=f"{self.persist_dir}/{index_id}")
+        
+        return index
+    
+    def load_index(self, index_id="default"):
+        """Load existing index from storage."""
+        # Rebuild storage context
+        db = chromadb.PersistentClient(path=f"{self.persist_dir}/chroma")
+        chroma_collection = db.get_collection(index_id)
+        
+        vector_store = ChromaVectorStore(chroma_collection=chroma_collection)
+        storage_context = StorageContext.from_defaults(
+            vector_store=vector_store,
+            persist_dir=f"{self.persist_dir}/{index_id}"
+        )
+        
+        # Load index
+        index = load_index_from_storage(storage_context)
+        return index
+
+# Usage
+index_manager = IndexManager()
+index = index_manager.create_vector_index(documents, "my_knowledge_base")
+```
+
+### Multi-Modal Index
+
+```python
+from llama_index.core.indices.multi_modal import MultiModalVectorStoreIndex
+from llama_index.core.schema import ImageDocument
+
+def create_multimodal_index(text_docs, image_paths):
+    """Create index for text and images."""
+    # Create image documents
+    image_documents = []
+    for img_path in image_paths:
+        image_doc = ImageDocument(
+            image_path=img_path,
+            metadata={"source": img_path}
+        )
+        image_documents.append(image_doc)
+    
+    # Create multi-modal index
+    index = MultiModalVectorStoreIndex.from_documents(
+        documents=text_docs + image_documents,
+        storage_context=storage_context
+    )
+    
+    return index
+```
+
+## Query Engines and Retrievers
+
+### Advanced Query Engine
+
+```python
+from llama_index.core import QueryBundle
+from llama_index.core.query_engine import RetrieverQueryEngine
+from llama_index.core.retrievers import VectorIndexRetriever
+from llama_index.core.response_synthesizers import get_response_synthesizer
+from llama_index.core.postprocessor import (
+    SimilarityPostprocessor,
+    KeywordNodePostprocessor,
+    MetadataReplacementPostProcessor
+)
+
+class AdvancedQueryEngine:
+    """Advanced query engine with custom retrievers and postprocessors."""
+    
+    def __init__(self, index):
+        self.index = index
+        
+    def create_query_engine(self, similarity_top_k=5, filters=None):
+        """Create query engine with advanced configuration."""
+        # Configure retriever
+        retriever = VectorIndexRetriever(
+            index=self.index,
+            similarity_top_k=similarity_top_k,
+            filters=filters,
+        )
+        
+        # Configure response synthesizer
+        response_synthesizer = get_response_synthesizer(
+            response_mode="tree_summarize",
+            use_async=True,
+            streaming=True
+        )
+        
+        # Add postprocessors
+        postprocessors = [
+            # Filter by similarity score
+            SimilarityPostprocessor(similarity_cutoff=0.7),
+            # Filter by keywords
+            KeywordNodePostprocessor(
+                required_keywords=["important", "critical"],
+                exclude_keywords=["outdated", "deprecated"]
+            ),
+            # Replace metadata in nodes
+            MetadataReplacementPostProcessor(
+                target_metadata_key="window_text"
+            )
+        ]
+        
+        # Create query engine
+        query_engine = RetrieverQueryEngine(
+            retriever=retriever,
+            response_synthesizer=response_synthesizer,
+            node_postprocessors=postprocessors
+        )
+        
+        return query_engine
+    
+    def query_with_metadata_filters(self, query: str, filters: dict):
+        """Query with metadata filtering."""
+        from llama_index.core.vector_stores import MetadataFilters, MetadataFilter
+        
+        # Create metadata filters
+        metadata_filters = MetadataFilters(
+            filters=[
+                MetadataFilter(key=k, value=v) for k, v in filters.items()
+            ]
+        )
+        
+        # Create filtered query engine
+        query_engine = self.create_query_engine(
+            filters=metadata_filters
+        )
+        
+        response = query_engine.query(query)
+        return response
+
+# Usage
+advanced_engine = AdvancedQueryEngine(index)
+query_engine = advanced_engine.create_query_engine()
+
+# Query with streaming
+response = query_engine.query("What are the key insights about customer retention?")
+for text in response.response_gen:
+    print(text, end="")
+```
+
+### Hybrid Search
+
+```python
+from llama_index.core.retrievers import (
+    BaseRetriever,
+    VectorIndexRetriever,
+    KeywordTableSimpleRetriever
+)
+from llama_index.retrievers.bm25 import BM25Retriever
+from llama_index.core.schema import NodeWithScore
+
+class HybridRetriever(BaseRetriever):
+    """Combine vector and keyword retrieval."""
+    
+    def __init__(self, vector_retriever, bm25_retriever, alpha=0.5):
+        self.vector_retriever = vector_retriever
+        self.bm25_retriever = bm25_retriever
+        self.alpha = alpha  # Weight for vector search
+        
+    def _retrieve(self, query_bundle: QueryBundle) -> list[NodeWithScore]:
+        """Retrieve using both methods and combine results."""
+        # Get results from both retrievers
+        vector_results = self.vector_retriever.retrieve(query_bundle)
+        bm25_results = self.bm25_retriever.retrieve(query_bundle)
+        
+        # Combine scores
+        node_scores = {}
+        
+        # Add vector search results
+        for node_with_score in vector_results:
+            node_id = node_with_score.node.node_id
+            node_scores[node_id] = {
+                'node': node_with_score.node,
+                'vector_score': node_with_score.score * self.alpha,
+                'bm25_score': 0
+            }
+        
+        # Add BM25 results
+        for node_with_score in bm25_results:
+            node_id = node_with_score.node.node_id
+            if node_id in node_scores:
+                node_scores[node_id]['bm25_score'] = node_with_score.score * (1 - self.alpha)
+            else:
+                node_scores[node_id] = {
+                    'node': node_with_score.node,
+                    'vector_score': 0,
+                    'bm25_score': node_with_score.score * (1 - self.alpha)
+                }
+        
+        # Calculate final scores and sort
+        final_results = []
+        for node_id, data in node_scores.items():
+            total_score = data['vector_score'] + data['bm25_score']
+            final_results.append(
+                NodeWithScore(node=data['node'], score=total_score)
+            )
+        
+        # Sort by score
+        final_results.sort(key=lambda x: x.score, reverse=True)
+        
+        return final_results[:self.vector_retriever.similarity_top_k]
+```
+
+## Response Synthesis
+
+### Custom Response Synthesizer
+
+```python
+from llama_index.core.response_synthesizers import BaseSynthesizer
+from llama_index.core.prompts import PromptTemplate
+
+class CustomResponseSynthesizer(BaseSynthesizer):
+    """Custom response synthesis with citations."""
+    
+    def __init__(self, llm, include_citations=True):
+        self.llm = llm
+        self.include_citations = include_citations
+        
+        self.qa_prompt = PromptTemplate(
+            "Context information:\n"
+            "---------------------\n"
+            "{context_str}\n"
+            "---------------------\n"
+            "Given the context above, answer the question below.\n"
+            "Include specific citations from the source documents.\n"
+            "Question: {query_str}\n"
+            "Answer: "
+        )
+    
+    def synthesize(self, query: str, nodes: list[NodeWithScore]) -> str:
+        """Synthesize response with citations."""
+        # Prepare context with source information
+        context_parts = []
+        for i, node_with_score in enumerate(nodes):
+            node = node_with_score.node
+            source = node.metadata.get('source', f'Document {i+1}')
+            context_parts.append(
+                f"[Source: {source}]\n{node.get_content()}\n"
+            )
+        
+        context_str = "\n".join(context_parts)
+        
+        # Generate response
+        response = self.llm.predict(
+            self.qa_prompt,
+            context_str=context_str,
+            query_str=query
+        )
+        
+        if self.include_citations:
+            # Add citations at the end
+            citations = "\n\nSources:\n"
+            for i, node_with_score in enumerate(nodes):
+                node = node_with_score.node
+                source = node.metadata.get('source', f'Document {i+1}')
+                citations += f"- {source}\n"
+            
+            response += citations
+        
+        return response
+```
+
+## Agent Framework
+
+### RAG Agent with Tools
+
+```python
+from llama_index.core.agent import ReActAgent
+from llama_index.core.tools import QueryEngineTool, ToolMetadata, FunctionTool
+
+def create_rag_agent(index, additional_tools=None):
+    """Create ReAct agent with RAG and custom tools."""
+    
+    # Create query engine tools for different indices
+    query_tools = [
+        QueryEngineTool(
+            query_engine=index.as_query_engine(similarity_top_k=3),
+            metadata=ToolMetadata(
+                name="knowledge_base",
+                description="Search company knowledge base for policies and procedures"
+            )
+        )
+    ]
+    
+    # Add custom function tools
+    def calculate_metric(expression: str) -> str:
+        """Calculate a mathematical expression."""
+        try:
+            result = eval(expression, {"__builtins__": {}}, {})
+            return f"Result: {result}"
+        except Exception as e:
+            return f"Error calculating: {str(e)}"
+    
+    function_tools = [
+        FunctionTool.from_defaults(
+            fn=calculate_metric,
+            name="calculator",
+            description="Calculate mathematical expressions"
+        )
+    ]
+    
+    # Combine all tools
+    all_tools = query_tools + function_tools
+    if additional_tools:
+        all_tools.extend(additional_tools)
+    
+    # Create agent
+    agent = ReActAgent.from_tools(
+        tools=all_tools,
+        llm=llm,
+        verbose=True,
+        max_iterations=10
+    )
+    
+    return agent
+
+# Usage
+agent = create_rag_agent(index)
+response = agent.chat("What is our refund policy and calculate 15% of $200")
+print(response)
+```
+
+## Evaluation and Monitoring
+
+### RAG Evaluation
+
+```python
+from llama_index.core.evaluation import (
+    RetrieverEvaluator,
+    RelevancyEvaluator,
+    FaithfulnessEvaluator,
+    DatasetGenerator
+)
+
+class RAGEvaluator:
+    """Evaluate RAG system performance."""
+    
+    def __init__(self, index, llm):
+        self.index = index
+        self.llm = llm
+        
+    def generate_eval_dataset(self, nodes, num_questions=50):
+        """Generate evaluation questions from documents."""
+        data_generator = DatasetGenerator.from_documents(
+            nodes,
+            llm=self.llm,
+            num_questions_per_chunk=2
+        )
+        
+        eval_questions = data_generator.generate_questions_from_nodes(
+            num=num_questions
+        )
+        
+        return eval_questions
+    
+    def evaluate_retrieval(self, queries, expected_ids):
+        """Evaluate retrieval performance."""
+        retriever = self.index.as_retriever(similarity_top_k=5)
+        evaluator = RetrieverEvaluator.from_metric_names(
+            ["mrr", "hit_rate", "precision", "recall"],
+            retriever=retriever
+        )
+        
+        results = evaluator.evaluate(queries, expected_ids)
+        return results
+    
+    def evaluate_response_quality(self, queries):
+        """Evaluate response quality."""
+        query_engine = self.index.as_query_engine()
+        
+        # Relevancy evaluation
+        relevancy_evaluator = RelevancyEvaluator(llm=self.llm)
+        
+        # Faithfulness evaluation
+        faithfulness_evaluator = FaithfulnessEvaluator(llm=self.llm)
+        
+        results = []
+        for query in queries:
+            response = query_engine.query(query)
+            
+            # Evaluate relevancy
+            relevancy_result = relevancy_evaluator.evaluate_response(
+                query=query,
+                response=response
+            )
+            
+            # Evaluate faithfulness
+            faithfulness_result = faithfulness_evaluator.evaluate_response(
+                query=query,
+                response=response
+            )
+            
+            results.append({
+                'query': query,
+                'relevancy': relevancy_result.passing,
+                'faithfulness': faithfulness_result.passing,
+                'response': str(response)
+            })
+        
+        return results
+```
+
+## Production Optimization
+
+### Caching and Performance
+
+```python
+from llama_index.core.storage.cache import SimpleCache
+from llama_index.core.callbacks import CallbackManager, LlamaDebugHandler
+import time
+
+class OptimizedRAGSystem:
+    """Production-optimized RAG system."""
+    
+    def __init__(self, index):
+        self.index = index
+        self.cache = SimpleCache()
+        
+        # Setup callbacks for monitoring
+        self.llama_debug = LlamaDebugHandler(print_trace_on_end=True)
+        self.callback_manager = CallbackManager([self.llama_debug])
+        
+    def query_with_cache(self, query: str, cache_ttl: int = 3600):
+        """Query with caching for repeated questions."""
+        # Check cache
+        cache_key = f"query:{query}"
+        cached_response = self.cache.get(cache_key)
+        
+        if cached_response:
+            print("Cache hit!")
+            return cached_response
+        
+        # Query with timing
+        start_time = time.time()
+        
+        query_engine = self.index.as_query_engine(
+            callback_manager=self.callback_manager
+        )
+        response = query_engine.query(query)
+        
+        query_time = time.time() - start_time
+        
+        # Cache response
+        self.cache.put(cache_key, response, ttl=cache_ttl)
+        
+        # Log performance metrics
+        print(f"Query time: {query_time:.2f}s")
+        print(f"Tokens used: {self.llama_debug.get_llm_inputs_outputs()}")
+        
+        return response
+    
+    def batch_query(self, queries: list[str], batch_size: int = 5):
+        """Process multiple queries efficiently."""
+        from concurrent.futures import ThreadPoolExecutor
+        
+        query_engine = self.index.as_query_engine()
+        results = []
+        
+        def process_query(query):
+            return query_engine.query(query)
+        
+        with ThreadPoolExecutor(max_workers=batch_size) as executor:
+            future_to_query = {
+                executor.submit(process_query, query): query 
+                for query in queries
+            }
+            
+            for future in future_to_query:
+                query = future_to_query[future]
+                try:
+                    response = future.result()
+                    results.append((query, response))
+                except Exception as e:
+                    print(f"Error processing query '{query}': {e}")
+                    results.append((query, None))
+        
+        return results
+```
+
+## Best Practices
+
+### Do's
+- Choose appropriate chunk sizes based on your use case
+- Implement proper error handling and fallbacks
+- Use metadata filtering for precise retrieval
+- Monitor token usage and costs
+- Cache frequently asked questions
+- Evaluate retrieval and response quality regularly
+- Use hybrid search for better results
+- Version your indices and track changes
+
+### Don'ts
+- Don't use overly large chunk sizes
+- Don't ignore embedding model limitations
+- Don't skip document preprocessing
+- Don't forget to persist indices
+- Don't use synchronous operations for large batches
+- Don't ignore security when handling sensitive data
+- Don't rely solely on similarity scores
+
+This comprehensive guide ensures effective implementation of RAG systems using LlamaIndex.
+
+- Implement query engines with proper retrieval and response synthesis strategies.
+- Use prompt templates and response synthesizers for consistent and relevant outputs.
+- Configure metadata filtering and semantic search for enhanced retrieval precision.
+- Implement proper evaluation metrics for RAG system performance assessment.
+- Use LlamaIndex's agent framework for complex multi-step reasoning and tool use.
+- Monitor retrieval quality and implement optimization strategies for production systems.

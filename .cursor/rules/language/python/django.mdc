@@ -1,0 +1,125 @@
+---
+description: Comprehensive Django framework rules for building scalable web applications,
+  covering models, views, templates, security, and best practices.
+globs:
+- '*.py'
+alwaysApply: false
+---
+- Follow Django's MVT (Model-View-Template) architecture pattern consistently.
+- Use Django's built-in security features: CSRF protection, SQL injection prevention, XSS protection.
+- Implement proper database model relationships using ForeignKey, ManyToManyField, and OneToOneField.
+- Use Django's ORM efficiently with select_related() and prefetch_related() for query optimization.
+- Follow Django naming conventions: models in CamelCase, views/functions in snake_case.
+- Implement proper authentication and authorization using Django's built-in systems.
+- Use Django's form system for data validation and rendering.
+- Structure projects with apps that follow single responsibility principle.
+- Use Django's migration system for database schema changes.
+- Implement proper error handling and logging using Django's logging framework.
+
+## Django Web Development Best Practices
+
+Django is a high-level Python web framework that encourages rapid development and clean, pragmatic design. Follow these practices for maintainable and secure Django applications.
+
+### 1. Project Structure and Organization
+
+- **App Design:** Create focused apps that handle specific functionality
+- **Settings Management:** Use separate settings files for different environments
+- **URL Configuration:** Organize URLs hierarchically with app-specific URL patterns
+- **Template Organization:** Structure templates with inheritance and reusable components
+- **Static Files:** Use Django's static files management for CSS, JS, and images
+
+### 2. Models and Database
+
+- **Model Design:** Keep models focused and avoid God objects
+- **Database Relationships:** Use appropriate relationship types and related_name attributes
+- **Model Methods:** Add custom methods for business logic encapsulation
+- **Meta Options:** Use Meta class for model configuration (ordering, indexes, constraints)
+- **Database Migrations:** Always review migrations before applying to production
+
+### 3. Views and URL Handling
+
+- **Class-Based Views:** Use CBVs for complex logic, function-based views for simple operations
+- **View Mixins:** Create reusable mixins for common functionality
+- **URL Patterns:** Use descriptive URL names and namespaces
+- **Request Handling:** Validate and sanitize all input data
+- **Response Handling:** Use appropriate HTTP status codes and response types
+
+### 4. Templates and Frontend
+
+- **Template Inheritance:** Use base templates and template blocks effectively
+- **Template Tags and Filters:** Create custom tags/filters for reusable template logic
+- **Static Files:** Organize CSS, JavaScript, and images properly
+- **Template Security:** Always escape user content, use CSRF tokens
+- **Responsive Design:** Implement mobile-friendly templates
+
+### 5. Forms and Validation
+
+- **Django Forms:** Use Django's form system for data validation and rendering
+- **Form Validation:** Implement clean methods for custom validation logic
+- **ModelForms:** Use ModelForms for database-backed forms
+- **Form Security:** Implement CSRF protection and input sanitization
+- **File Uploads:** Handle file uploads securely with proper validation
+
+### 6. Security Best Practices
+
+- **Authentication:** Use Django's built-in authentication or extend it properly
+- **Authorization:** Implement proper permission checking and user groups
+- **HTTPS:** Always use HTTPS in production environments
+- **Secret Key:** Keep SECRET_KEY secure and unique per environment
+- **Security Middleware:** Use Django's security middleware components
+
+### 7. Performance Optimization
+
+- **Query Optimization:** Use select_related() and prefetch_related() appropriately
+- **Database Indexing:** Add database indexes for frequently queried fields
+- **Caching:** Implement caching strategies using Django's cache framework
+- **Static Files:** Use CDN for static file delivery in production
+- **Database Connection Pooling:** Configure proper database connection settings
+
+### 8. Testing Strategies
+
+- **Unit Tests:** Write tests for models, views, and forms
+- **Integration Tests:** Test complete workflows and user interactions
+- **Test Data:** Use fixtures or factories for test data management
+- **Test Coverage:** Maintain high test coverage for critical functionality
+- **Test Organization:** Structure tests logically within test modules
+
+### 9. Deployment and Production
+
+- **Environment Configuration:** Use environment-specific settings
+- **Database Configuration:** Optimize database settings for production
+- **Web Server:** Use proper WSGI server (Gunicorn, uWSGI) with reverse proxy
+- **Error Monitoring:** Implement error tracking and monitoring
+- **Backup Strategy:** Implement regular database and media backups
+
+### 10. Common Patterns and Anti-patterns
+
+**Recommended Approaches:**
+- Use Django's built-in features before creating custom solutions
+- Follow the DRY (Don't Repeat Yourself) principle
+- Use Django's admin interface for content management when appropriate
+- Implement proper logging for debugging and monitoring
+- Use Django's internationalization features for multi-language support
+
+**Anti-patterns:**
+- Putting business logic in templates
+- Creating overly complex models with too many responsibilities
+- Ignoring Django's security features
+- Not using migrations for database changes
+- Hardcoding configuration values
+
+### 11. API Development
+
+- **Django REST Framework:** Use DRF for building robust APIs
+- **Serializers:** Implement proper data serialization and validation
+- **API Versioning:** Plan for API versioning from the start
+- **Authentication:** Use token-based or OAuth authentication for APIs
+- **API Documentation:** Document APIs using tools like DRF's browsable API
+
+### 12. Advanced Django Features
+
+- **Custom Management Commands:** Create management commands for administrative tasks
+- **Signals:** Use Django signals for decoupled event handling
+- **Middleware:** Create custom middleware for cross-cutting concerns
+- **Custom Fields:** Implement custom model fields when needed
+- **Database Routing:** Use database routing for multiple databases

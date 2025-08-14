@@ -1,0 +1,99 @@
+---
+alwaysApply: false
+description: Redux state management rules for predictable application state in JavaScript
+  applications.
+globs:
+- '*.js,*.jsx,*.ts,*.tsx'
+---
+
+- Use Redux for predictable state management in complex JavaScript applications.
+- Follow Redux principles: single source of truth, state is read-only, changes via pure functions.
+- Implement actions, action creators, and reducers following Redux patterns.
+- Use Redux Toolkit for modern Redux development with less boilerplate.
+- Organize Redux code with feature-based folder structure and duck pattern.
+- Implement proper middleware for async operations (Redux Thunk or Redux Saga).
+- Use selectors with reselect library for efficient state derivation.
+- Apply immutable update patterns in reducers to maintain state consistency.
+- Implement proper error handling and loading states in Redux flows.
+- Use Redux DevTools for debugging and time-travel debugging capabilities.
+
+# Redux Best Practices
+
+
+## Overview
+
+Redux state management rules for predictable application state in JavaScript applications.
+
+
+## Getting Started with Redux
+
+### Quick Setup
+
+```bash
+# Install Redux
+npm install redux
+
+# Create new project
+npx create-redux-app my-app
+cd my-app
+
+# Start development
+npm run dev
+```
+
+### Basic Component
+
+```javascript
+// components/Example.js
+import { Component } from 'redux';
+
+export default function Example() {
+    return (
+        <Component>
+            <h1>Hello Redux!</h1>
+        </Component>
+    );
+}
+```
+
+## Advanced Topics
+
+### Performance Optimization
+
+When working with Redux, consider these optimization strategies:
+- Cache frequently accessed data
+- Use batch operations where possible
+- Implement connection pooling
+- Monitor resource usage
+- Profile code to identify bottlenecks
+
+### Troubleshooting Guide
+
+Common issues and solutions:
+
+1. **Issue**: Configuration not loading
+   **Solution**: Check file paths and permissions
+
+2. **Issue**: Performance degradation
+   **Solution**: Review logs and increase resource limits
+
+3. **Issue**: Integration failures
+   **Solution**: Verify API versions and compatibility
+
+### Additional Resources
+
+- [Official Documentation](#)
+- [Community Forum](#)
+- [GitHub Repository](#)
+- [Tutorial Videos](#)
+- [Best Practices Guide](#)
+
+### Contributing
+
+Contributions are welcome! Please:
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Submit a pull request
+
+For more details, see CONTRIBUTING.md

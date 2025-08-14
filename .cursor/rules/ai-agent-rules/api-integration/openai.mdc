@@ -1,0 +1,984 @@
+---
+alwaysApply: false
+description: OpenAI API integration for GPT models with authentication, error handling,
+  and best practices
+globs:
+- '*openai*.py'
+- '*gpt*.py'
+- '**/ai/**'
+- '**/llm/**'
+---
+
+# OpenAI API Integration Best Practices
+
+## Overview
+
+The OpenAI API provides access to powerful language models like GPT-4, GPT-3.5-turbo, and specialized models for embeddings, moderation, and more. This guide covers best practices for integrating OpenAI's services into production applications.
+
+## Core Principles
+
+- Use OpenAI API for integrating GPT models into applications with proper authentication
+- Implement proper error handling for API rate limits, timeouts, and model availability
+- Use appropriate model selection based on task complexity and cost considerations
+- Implement token counting and management to optimize API usage and costs
+- Use system prompts effectively to establish context and behavior guidelines
+- Implement proper prompt engineering techniques for consistent and reliable outputs
+- Handle streaming responses appropriately for real-time user experiences
+- Use function calling capabilities for structured outputs and tool integration
+- Implement proper content filtering and safety measures for user-generated content
+- Monitor API usage, costs, and performance metrics for optimization
+
+## Setup and Authentication
+
+### Installation and Configuration
+
+```python
+# Install the OpenAI Python library
+# pip install openai
+
+import os
+from openai import OpenAI
+from typing import Optional, List, Dict, Any
+import logging
+
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+class OpenAIClient:
+    """Wrapper for OpenAI API with best practices"""
+    
+    def __init__(self, api_key: Optional[str] = None, organization: Optional[str] = None):
+        """Initialize OpenAI client with authentication"""
+        self.api_key = api_key or os.environ.get("OPENAI_API_KEY")
+        self.organization = organization or os.environ.get("OPENAI_ORG_ID")
+        
+        if not self.api_key:
+            raise ValueError("OpenAI API key not provided")
+        
+        self.client = OpenAI(
+            api_key=self.api_key,
+            organization=self.organization,
+            max_retries=3,
+            timeout=30.0
+        )
+        
+        # Default models
+        self.DEFAULT_CHAT_MODEL = "gpt-3.5-turbo"
+        self.DEFAULT_EMBEDDING_MODEL = "text-embedding-3-small"
+        
+    def test_connection(self):
+        """Test API connection"""
+        try:
+            models = self.client.models.list()
+            logger.info(f"Successfully connected. Available models: {len(models.data)}")
+            return True
+        except Exception as e:
+            logger.error(f"Connection failed: {e}")
+            return False
+```
+
+## Chat Completions
+
+### Basic Chat Implementation
+
+```python
+from typing import List, Dict, Optional
+import tiktoken
+
+class ChatCompletionHandler:
+    """Handle chat completions with best practices"""
+    
+    def __init__(self, client: OpenAIClient):
+        self.client = client
+        self.encoding = tiktoken.encoding_for_model("gpt-3.5-turbo")
+    
+    def count_tokens(self, messages: List[Dict[str, str]], model: str = "gpt-3.5-turbo") -> int:
+        """Count tokens in messages"""
+        try:
+            encoding = tiktoken.encoding_for_model(model)
+        except KeyError:
+            encoding = tiktoken.get_encoding("cl100k_base")
+        
+        num_tokens = 0
+        for message in messages:
+            num_tokens += 4  # Every message follows <im_start>{role/name}\n{content}<im_end>\n
+            for key, value in message.items():
+                num_tokens += len(encoding.encode(value))
+                if key == "name":
+                    num_tokens += -1  # Role is omitted if name is present
+        num_tokens += 2  # Every reply is primed with <im_start>assistant
+        return num_tokens
+    
+    def create_chat_completion(
+        self,
+        messages: List[Dict[str, str]],
+        model: str = None,
+        temperature: float = 0.7,
+        max_tokens: Optional[int] = None,
+        stream: bool = False,
+        **kwargs
+    ):
+        """Create chat completion with error handling"""
+        model = model or self.client.DEFAULT_CHAT_MODEL
+        
+        # Check token limits
+        input_tokens = self.count_tokens(messages, model)
+        model_limits = {
+            "gpt-4": 8192,
+            "gpt-4-32k": 32768,
+            "gpt-3.5-turbo": 4096,
+            "gpt-3.5-turbo-16k": 16384
+        }
+        
+        model_limit = model_limits.get(model, 4096)
+        if input_tokens > model_limit * 0.9:  # Leave room for response
+            logger.warning(f"Input tokens ({input_tokens}) approaching model limit ({model_limit})")
+        
+        try:
+            response = self.client.client.chat.completions.create(
+                model=model,
+                messages=messages,
+                temperature=temperature,
+                max_tokens=max_tokens,
+                stream=stream,
+                **kwargs
+            )
+            
+            if stream:
+                return self._handle_stream(response)
+            else:
+                return self._handle_response(response)
+                
+        except Exception as e:
+            logger.error(f"Chat completion error: {e}")
+            return self._handle_error(e)
+    
+    def _handle_response(self, response):
+        """Process non-streaming response"""
+        return {
+            "content": response.choices[0].message.content,
+            "usage": {
+                "prompt_tokens": response.usage.prompt_tokens,
+                "completion_tokens": response.usage.completion_tokens,
+                "total_tokens": response.usage.total_tokens
+            },
+            "model": response.model,
+            "finish_reason": response.choices[0].finish_reason
+        }
+    
+    def _handle_stream(self, stream):
+        """Process streaming response"""
+        for chunk in stream:
+            if chunk.choices[0].delta.content:
+                yield chunk.choices[0].delta.content
+    
+    def _handle_error(self, error):
+        """Handle API errors gracefully"""
+        error_map = {
+            "rate_limit_exceeded": "Rate limit hit. Please wait and retry.",
+            "model_not_found": "Invalid model specified.",
+            "invalid_api_key": "Invalid API key provided.",
+            "insufficient_quota": "Quota exceeded. Check billing.",
+        }
+        
+        error_type = getattr(error, 'type', 'unknown')
+        message = error_map.get(error_type, str(error))
+        
+        return {
+            "error": True,
+            "error_type": error_type,
+            "message": message
+        }
+```
+
+### Advanced Chat Features
+
+```python
+class AdvancedChatHandler(ChatCompletionHandler):
+    """Advanced chat features including function calling"""
+    
+    def create_chat_with_functions(
+        self,
+        messages: List[Dict[str, str]],
+        functions: List[Dict[str, Any]],
+        function_call: str = "auto",
+        **kwargs
+    ):
+        """Chat completion with function calling"""
+        try:
+            response = self.client.client.chat.completions.create(
+                model="gpt-3.5-turbo-0613",  # Function calling requires specific models
+                messages=messages,
+                functions=functions,
+                function_call=function_call,
+                **kwargs
+            )
+            
+            message = response.choices[0].message
+            
+            # Check if function was called
+            if message.function_call:
+                return {
+                    "function_call": {
+                        "name": message.function_call.name,
+                        "arguments": message.function_call.arguments
+                    },
+                    "usage": response.usage.dict()
+                }
+            else:
+                return {
+                    "content": message.content,
+                    "usage": response.usage.dict()
+                }
+                
+        except Exception as e:
+            logger.error(f"Function calling error: {e}")
+            return self._handle_error(e)
+    
+    def create_conversation_chain(
+        self,
+        system_prompt: str,
+        conversation_history: List[Dict[str, str]] = None,
+        max_history_tokens: int = 2000
+    ):
+        """Manage conversation with history truncation"""
+        messages = [{"role": "system", "content": system_prompt}]
+        
+        if conversation_history:
+            # Truncate history to fit token limit
+            history_tokens = 0
+            truncated_history = []
+            
+            for msg in reversed(conversation_history):
+                msg_tokens = len(self.encoding.encode(msg.get("content", "")))
+                if history_tokens + msg_tokens > max_history_tokens:
+                    break
+                truncated_history.insert(0, msg)
+                history_tokens += msg_tokens
+            
+            messages.extend(truncated_history)
+        
+        return messages
+
+# Example function definitions for function calling
+WEATHER_FUNCTION = {
+    "name": "get_weather",
+    "description": "Get the current weather in a given location",
+    "parameters": {
+        "type": "object",
+        "properties": {
+            "location": {
+                "type": "string",
+                "description": "The city and state, e.g. San Francisco, CA"
+            },
+            "unit": {
+                "type": "string",
+                "enum": ["celsius", "fahrenheit"],
+                "description": "Temperature unit"
+            }
+        },
+        "required": ["location"]
+    }
+}
+```
+
+## Embeddings
+
+### Text Embeddings Implementation
+
+```python
+import numpy as np
+from typing import List, Union
+import pickle
+
+class EmbeddingHandler:
+    """Handle text embeddings for semantic search and similarity"""
+    
+    def __init__(self, client: OpenAIClient):
+        self.client = client
+        self.cache = {}  # Simple in-memory cache
+    
+    def create_embedding(
+        self,
+        text: Union[str, List[str]],
+        model: str = None
+    ) -> Union[List[float], List[List[float]]]:
+        """Create embeddings for text"""
+        model = model or self.client.DEFAULT_EMBEDDING_MODEL
+        
+        # Handle single string
+        if isinstance(text, str):
+            text = [text]
+            single_input = True
+        else:
+            single_input = False
+        
+        # Check cache
+        cache_keys = [f"{model}:{t[:50]}" for t in text]
+        cached_results = []
+        uncached_texts = []
+        uncached_indices = []
+        
+        for i, (key, t) in enumerate(zip(cache_keys, text)):
+            if key in self.cache:
+                cached_results.append((i, self.cache[key]))
+            else:
+                uncached_texts.append(t)
+                uncached_indices.append(i)
+        
+        # Get embeddings for uncached texts
+        if uncached_texts:
+            try:
+                response = self.client.client.embeddings.create(
+                    model=model,
+                    input=uncached_texts
+                )
+                
+                # Cache results
+                for i, embedding in enumerate(response.data):
+                    idx = uncached_indices[i]
+                    key = cache_keys[idx]
+                    self.cache[key] = embedding.embedding
+                    cached_results.append((idx, embedding.embedding))
+                
+            except Exception as e:
+                logger.error(f"Embedding error: {e}")
+                raise
+        
+        # Sort by original index
+        cached_results.sort(key=lambda x: x[0])
+        embeddings = [emb for _, emb in cached_results]
+        
+        return embeddings[0] if single_input else embeddings
+    
+    def cosine_similarity(self, vec1: List[float], vec2: List[float]) -> float:
+        """Calculate cosine similarity between two vectors"""
+        vec1 = np.array(vec1)
+        vec2 = np.array(vec2)
+        
+        dot_product = np.dot(vec1, vec2)
+        norm1 = np.linalg.norm(vec1)
+        norm2 = np.linalg.norm(vec2)
+        
+        return dot_product / (norm1 * norm2)
+    
+    def find_similar(
+        self,
+        query_embedding: List[float],
+        embeddings: List[List[float]],
+        texts: List[str],
+        top_k: int = 5,
+        threshold: float = 0.7
+    ) -> List[Dict[str, Any]]:
+        """Find similar texts based on embeddings"""
+        similarities = []
+        
+        for i, embedding in enumerate(embeddings):
+            similarity = self.cosine_similarity(query_embedding, embedding)
+            if similarity >= threshold:
+                similarities.append({
+                    "text": texts[i],
+                    "similarity": similarity,
+                    "index": i
+                })
+        
+        # Sort by similarity
+        similarities.sort(key=lambda x: x["similarity"], reverse=True)
+        
+        return similarities[:top_k]
+    
+    def save_embeddings(self, embeddings: Dict[str, List[float]], filepath: str):
+        """Save embeddings to file"""
+        with open(filepath, 'wb') as f:
+            pickle.dump(embeddings, f)
+    
+    def load_embeddings(self, filepath: str) -> Dict[str, List[float]]:
+        """Load embeddings from file"""
+        with open(filepath, 'rb') as f:
+            return pickle.load(f)
+```
+
+## Prompt Engineering
+
+### Prompt Template Management
+
+```python
+from string import Template
+from typing import Dict, Any
+
+class PromptManager:
+    """Manage and optimize prompts"""
+    
+    def __init__(self):
+        self.templates = {}
+        self.load_default_templates()
+    
+    def load_default_templates(self):
+        """Load default prompt templates"""
+        self.templates = {
+            "summarization": Template("""
+Please summarize the following text in $style style.
+Keep the summary under $max_words words.
+Focus on: $focus_areas
+
+Text to summarize:
+$text
+
+Summary:
+"""),
+            "classification": Template("""
+Classify the following text into one of these categories: $categories
+
+Consider these criteria:
+$criteria
+
+Text: $text
+
+Classification:
+"""),
+            "extraction": Template("""
+Extract the following information from the text:
+$fields
+
+Format the output as JSON.
+
+Text: $text
+
+Extracted information:
+"""),
+            "code_generation": Template("""
+Generate $language code that:
+$requirements
+
+Additional constraints:
+- $constraints
+
+Code:
+""")
+        }
+    
+    def create_prompt(self, template_name: str, **kwargs) -> str:
+        """Create prompt from template"""
+        if template_name not in self.templates:
+            raise ValueError(f"Template '{template_name}' not found")
+        
+        template = self.templates[template_name]
+        return template.safe_substitute(**kwargs)
+    
+    def add_template(self, name: str, template_string: str):
+        """Add custom template"""
+        self.templates[name] = Template(template_string)
+    
+    def optimize_prompt(self, prompt: str, model: str = "gpt-3.5-turbo") -> str:
+        """Optimize prompt for better results"""
+        optimizations = []
+        
+        # Check prompt length
+        if len(prompt) < 50:
+            optimizations.append("Consider adding more context or examples")
+        
+        # Check for clear instructions
+        instruction_keywords = ["please", "must", "should", "need to", "require"]
+        if not any(keyword in prompt.lower() for keyword in instruction_keywords):
+            optimizations.append("Add clear instructions or requirements")
+        
+        # Check for examples
+        if "example:" not in prompt.lower() and "e.g." not in prompt.lower():
+            optimizations.append("Consider adding examples for clarity")
+        
+        # Check for output format specification
+        format_keywords = ["format", "structure", "output", "return"]
+        if not any(keyword in prompt.lower() for keyword in format_keywords):
+            optimizations.append("Specify desired output format")
+        
+        if optimizations:
+            logger.info(f"Prompt optimization suggestions: {', '.join(optimizations)}")
+        
+        return prompt
+
+# Example usage
+prompt_manager = PromptManager()
+
+# Create summarization prompt
+summary_prompt = prompt_manager.create_prompt(
+    "summarization",
+    style="executive",
+    max_words=100,
+    focus_areas="key metrics and outcomes",
+    text="[Your long text here]"
+)
+```
+
+## Streaming Responses
+
+### Real-time Streaming Implementation
+
+```python
+import asyncio
+from typing import AsyncGenerator
+
+class StreamingHandler:
+    """Handle streaming responses for real-time applications"""
+    
+    def __init__(self, client: OpenAIClient):
+        self.client = client
+    
+    async def stream_chat_completion(
+        self,
+        messages: List[Dict[str, str]],
+        model: str = "gpt-3.5-turbo",
+        **kwargs
+    ) -> AsyncGenerator[str, None]:
+        """Async streaming chat completion"""
+        try:
+            stream = await self.client.client.chat.completions.create(
+                model=model,
+                messages=messages,
+                stream=True,
+                **kwargs
+            )
+            
+            async for chunk in stream:
+                if chunk.choices[0].delta.content:
+                    yield chunk.choices[0].delta.content
+                    
+        except Exception as e:
+            logger.error(f"Streaming error: {e}")
+            yield f"Error: {str(e)}"
+    
+    def process_stream_with_callback(
+        self,
+        messages: List[Dict[str, str]],
+        callback,
+        complete_callback=None,
+        **kwargs
+    ):
+        """Process stream with callbacks"""
+        full_response = ""
+        
+        try:
+            response = self.client.client.chat.completions.create(
+                messages=messages,
+                stream=True,
+                **kwargs
+            )
+            
+            for chunk in response:
+                if chunk.choices[0].delta.content:
+                    content = chunk.choices[0].delta.content
+                    full_response += content
+                    callback(content)
+            
+            if complete_callback:
+                complete_callback(full_response)
+                
+        except Exception as e:
+            logger.error(f"Stream processing error: {e}")
+            if callback:
+                callback(f"\nError: {str(e)}")
+
+# Example WebSocket streaming
+from fastapi import FastAPI, WebSocket
+import json
+
+app = FastAPI()
+
+@app.websocket("/ws/chat")
+async def websocket_chat(websocket: WebSocket):
+    await websocket.accept()
+    client = OpenAIClient()
+    handler = StreamingHandler(client)
+    
+    try:
+        while True:
+            data = await websocket.receive_text()
+            message_data = json.loads(data)
+            
+            messages = message_data.get("messages", [])
+            
+            async for chunk in handler.stream_chat_completion(messages):
+                await websocket.send_text(json.dumps({
+                    "type": "stream",
+                    "content": chunk
+                }))
+            
+            await websocket.send_text(json.dumps({
+                "type": "complete",
+                "content": "Stream complete"
+            }))
+            
+    except Exception as e:
+        await websocket.close()
+```
+
+## Error Handling and Retries
+
+### Robust Error Management
+
+```python
+import time
+from functools import wraps
+from typing import Callable
+
+class RateLimitHandler:
+    """Handle rate limiting and retries"""
+    
+    def __init__(self, max_retries: int = 3, base_delay: float = 1.0):
+        self.max_retries = max_retries
+        self.base_delay = base_delay
+    
+    def with_retry(self, func: Callable):
+        """Decorator for automatic retry logic"""
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            last_exception = None
+            
+            for attempt in range(self.max_retries):
+                try:
+                    return func(*args, **kwargs)
+                    
+                except Exception as e:
+                    last_exception = e
+                    error_type = getattr(e, 'type', '')
+                    
+                    if 'rate_limit' in str(error_type):
+                        # Exponential backoff for rate limits
+                        delay = self.base_delay * (2 ** attempt)
+                        logger.warning(f"Rate limit hit. Waiting {delay}s...")
+                        time.sleep(delay)
+                        
+                    elif 'timeout' in str(error_type):
+                        # Shorter delay for timeouts
+                        time.sleep(self.base_delay)
+                        
+                    else:
+                        # Don't retry other errors
+                        raise
+            
+            raise last_exception
+        
+        return wrapper
+
+# Usage monitoring
+class UsageMonitor:
+    """Monitor API usage and costs"""
+    
+    def __init__(self):
+        self.usage_data = {
+            "total_tokens": 0,
+            "total_cost": 0.0,
+            "requests": 0,
+            "model_usage": {}
+        }
+        
+        # Pricing per 1K tokens (example rates)
+        self.pricing = {
+            "gpt-4": {"input": 0.03, "output": 0.06},
+            "gpt-3.5-turbo": {"input": 0.0015, "output": 0.002},
+            "text-embedding-3-small": {"input": 0.00002, "output": 0}
+        }
+    
+    def track_usage(self, model: str, usage: Dict[str, int]):
+        """Track token usage and calculate costs"""
+        prompt_tokens = usage.get("prompt_tokens", 0)
+        completion_tokens = usage.get("completion_tokens", 0)
+        total_tokens = usage.get("total_tokens", 0)
+        
+        # Update totals
+        self.usage_data["total_tokens"] += total_tokens
+        self.usage_data["requests"] += 1
+        
+        # Track per model
+        if model not in self.usage_data["model_usage"]:
+            self.usage_data["model_usage"][model] = {
+                "tokens": 0,
+                "requests": 0,
+                "cost": 0.0
+            }
+        
+        self.usage_data["model_usage"][model]["tokens"] += total_tokens
+        self.usage_data["model_usage"][model]["requests"] += 1
+        
+        # Calculate cost
+        if model in self.pricing:
+            input_cost = (prompt_tokens / 1000) * self.pricing[model]["input"]
+            output_cost = (completion_tokens / 1000) * self.pricing[model]["output"]
+            total_cost = input_cost + output_cost
+            
+            self.usage_data["total_cost"] += total_cost
+            self.usage_data["model_usage"][model]["cost"] += total_cost
+    
+    def get_report(self) -> Dict[str, Any]:
+        """Get usage report"""
+        return {
+            "summary": {
+                "total_requests": self.usage_data["requests"],
+                "total_tokens": self.usage_data["total_tokens"],
+                "total_cost": round(self.usage_data["total_cost"], 4),
+                "average_tokens_per_request": (
+                    self.usage_data["total_tokens"] / self.usage_data["requests"]
+                    if self.usage_data["requests"] > 0 else 0
+                )
+            },
+            "by_model": self.usage_data["model_usage"]
+        }
+```
+
+## Content Moderation
+
+### Safety and Moderation
+
+```python
+class ModerationHandler:
+    """Handle content moderation and safety"""
+    
+    def __init__(self, client: OpenAIClient):
+        self.client = client
+    
+    def moderate_content(self, text: str) -> Dict[str, Any]:
+        """Check content for policy violations"""
+        try:
+            response = self.client.client.moderations.create(input=text)
+            
+            result = response.results[0]
+            
+            # Check if content is flagged
+            if result.flagged:
+                flagged_categories = [
+                    category for category, flagged in result.categories.dict().items()
+                    if flagged
+                ]
+                
+                return {
+                    "safe": False,
+                    "flagged_categories": flagged_categories,
+                    "scores": result.category_scores.dict()
+                }
+            
+            return {
+                "safe": True,
+                "flagged_categories": [],
+                "scores": result.category_scores.dict()
+            }
+            
+        except Exception as e:
+            logger.error(f"Moderation error: {e}")
+            return {
+                "safe": False,
+                "error": str(e)
+            }
+    
+    def create_safe_completion(
+        self,
+        messages: List[Dict[str, str]],
+        **kwargs
+    ) -> Dict[str, Any]:
+        """Create completion with content filtering"""
+        # Check user message
+        user_message = messages[-1]["content"] if messages else ""
+        moderation_result = self.moderate_content(user_message)
+        
+        if not moderation_result["safe"]:
+            return {
+                "error": True,
+                "message": "Content violates usage policies",
+                "categories": moderation_result["flagged_categories"]
+            }
+        
+        # Get completion
+        handler = ChatCompletionHandler(self.client)
+        response = handler.create_chat_completion(messages, **kwargs)
+        
+        # Check response
+        if "content" in response:
+            response_moderation = self.moderate_content(response["content"])
+            if not response_moderation["safe"]:
+                return {
+                    "error": True,
+                    "message": "Generated content violates policies",
+                    "categories": response_moderation["flagged_categories"]
+                }
+        
+        return response
+```
+
+## Production Integration
+
+### Complete API Service
+
+```python
+from fastapi import FastAPI, HTTPException, Depends
+from pydantic import BaseModel
+from typing import List, Optional
+import os
+
+# Pydantic models
+class ChatRequest(BaseModel):
+    messages: List[Dict[str, str]]
+    model: Optional[str] = "gpt-3.5-turbo"
+    temperature: Optional[float] = 0.7
+    max_tokens: Optional[int] = None
+    stream: Optional[bool] = False
+
+class ChatResponse(BaseModel):
+    content: str
+    usage: Dict[str, int]
+    model: str
+
+# FastAPI app
+app = FastAPI(title="OpenAI API Service")
+
+# Initialize clients
+client = OpenAIClient()
+chat_handler = ChatCompletionHandler(client)
+moderation_handler = ModerationHandler(client)
+usage_monitor = UsageMonitor()
+
+@app.post("/chat", response_model=ChatResponse)
+async def chat_completion(request: ChatRequest):
+    """Create chat completion"""
+    try:
+        # Moderate content
+        last_message = request.messages[-1]["content"]
+        moderation = moderation_handler.moderate_content(last_message)
+        
+        if not moderation["safe"]:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Content violates policies: {moderation['flagged_categories']}"
+            )
+        
+        # Create completion
+        response = chat_handler.create_chat_completion(
+            messages=request.messages,
+            model=request.model,
+            temperature=request.temperature,
+            max_tokens=request.max_tokens,
+            stream=request.stream
+        )
+        
+        if "error" in response:
+            raise HTTPException(status_code=500, detail=response["message"])
+        
+        # Track usage
+        usage_monitor.track_usage(request.model, response["usage"])
+        
+        return ChatResponse(
+            content=response["content"],
+            usage=response["usage"],
+            model=response["model"]
+        )
+        
+    except Exception as e:
+        logger.error(f"API error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/usage")
+async def get_usage():
+    """Get usage statistics"""
+    return usage_monitor.get_report()
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=8000)
+```
+
+## Best Practices
+
+### Do's
+- Always validate and moderate user input
+- Implement proper error handling and retries
+- Monitor token usage and costs
+- Use appropriate models for each task
+- Cache embeddings for efficiency
+- Stream responses for better UX
+- Version your prompts
+- Test prompts thoroughly before production
+
+### Don'ts
+- Don't expose API keys in client code
+- Don't ignore rate limits
+- Don't send sensitive data to the API
+- Don't use maximum tokens unnecessarily
+- Don't skip content moderation
+- Don't hardcode model names
+- Don't ignore error responses
+
+This comprehensive guide ensures safe and efficient integration of OpenAI's API into production applications.
+
+# Openai Best Practices
+
+
+## Getting Started with Openai
+
+### Quick Setup
+
+```bash
+# Install Openai
+npm install openai
+
+# Create new project
+npx create-openai-app my-app
+cd my-app
+
+# Start development
+npm run dev
+```
+
+### Basic Component
+
+```javascript
+// components/Example.js
+import { Component } from 'openai';
+
+export default function Example() {
+    return (
+        <Component>
+            <h1>Hello Openai!</h1>
+        </Component>
+    );
+}
+```
+
+## Advanced Topics
+
+### Performance Optimization
+
+When working with Openai, consider these optimization strategies:
+- Cache frequently accessed data
+- Use batch operations where possible
+- Implement connection pooling
+- Monitor resource usage
+- Profile code to identify bottlenecks
+
+### Troubleshooting Guide
+
+Common issues and solutions:
+
+1. **Issue**: Configuration not loading
+   **Solution**: Check file paths and permissions
+
+2. **Issue**: Performance degradation
+   **Solution**: Review logs and increase resource limits
+
+3. **Issue**: Integration failures
+   **Solution**: Verify API versions and compatibility
+
+### Additional Resources
+
+- [Official Documentation](#)
+- [Community Forum](#)
+- [GitHub Repository](#)
+- [Tutorial Videos](#)
+- [Best Practices Guide](#)
+
+### Contributing
+
+Contributions are welcome! Please:
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Submit a pull request
+
+For more details, see CONTRIBUTING.md

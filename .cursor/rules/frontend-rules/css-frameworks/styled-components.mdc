@@ -1,0 +1,489 @@
+---
+description: CSS-in-JS styling with styled-components for React applications and component libraries
+globs: ["*.jsx", "*.tsx", "*.styled.js", "*.styled.ts", "**/styles/**"]
+alwaysApply: false
+---
+
+# Styled Components Best Practices
+
+## Overview
+
+Styled-components is a popular CSS-in-JS library that allows you to write CSS code inside JavaScript/TypeScript files. It provides component-scoped styling, dynamic theming, and excellent developer experience for React applications.
+
+## Core Principles
+
+- Use styled-components for component-scoped CSS with JavaScript template literals
+- Implement proper theming with ThemeProvider for consistent design systems
+- Use props-based styling for dynamic and conditional component appearances
+- Create reusable styled components with proper composition and inheritance
+- Implement responsive design with theme breakpoints and media query helpers
+- Use styled-components' CSS helper for complex styles and animations
+- Apply proper naming conventions for styled components and theme variables
+- Optimize performance with styled-components' shouldForwardProp for prop filtering
+- Use styled-components' attrs helper for setting default props and attributes
+- Implement proper TypeScript integration with styled-components for type safety
+
+## Installation and Setup
+
+### Basic Installation
+
+```bash
+npm install styled-components
+npm install --save-dev @types/styled-components
+```
+
+### Babel Plugin for Better Debugging
+
+```json
+// .babelrc
+{
+  "plugins": [
+    [
+      "babel-plugin-styled-components",
+      {
+        "displayName": true,
+        "fileName": true
+      }
+    ]
+  ]
+}
+```
+
+## Theme Configuration
+
+### Theme Definition
+
+```typescript
+// theme.ts
+export const theme = {
+  colors: {
+    primary: '#007bff',
+    secondary: '#6c757d',
+    success: '#28a745',
+    danger: '#dc3545',
+    warning: '#ffc107',
+    info: '#17a2b8',
+    light: '#f8f9fa',
+    dark: '#343a40',
+    white: '#ffffff',
+    black: '#000000',
+  },
+  fonts: {
+    body: 'system-ui, -apple-system, sans-serif',
+    heading: 'Georgia, serif',
+    monospace: 'Menlo, monospace',
+  },
+  fontSizes: {
+    xs: '0.75rem',
+    sm: '0.875rem',
+    md: '1rem',
+    lg: '1.125rem',
+    xl: '1.25rem',
+    '2xl': '1.5rem',
+    '3xl': '1.875rem',
+    '4xl': '2.25rem',
+  },
+  breakpoints: {
+    xs: '0px',
+    sm: '576px',
+    md: '768px',
+    lg: '992px',
+    xl: '1200px',
+    '2xl': '1400px',
+  },
+  spacing: {
+    xs: '0.25rem',
+    sm: '0.5rem',
+    md: '1rem',
+    lg: '1.5rem',
+    xl: '2rem',
+    '2xl': '3rem',
+  },
+  radii: {
+    none: '0',
+    sm: '0.125rem',
+    base: '0.25rem',
+    md: '0.375rem',
+    lg: '0.5rem',
+    xl: '0.75rem',
+    full: '9999px',
+  },
+  shadows: {
+    sm: '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
+    base: '0 1px 3px 0 rgba(0, 0, 0, 0.1)',
+    md: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
+    lg: '0 10px 15px -3px rgba(0, 0, 0, 0.1)',
+    xl: '0 20px 25px -5px rgba(0, 0, 0, 0.1)',
+  },
+} as const;
+
+export type Theme = typeof theme;
+```
+
+### Theme Provider Setup
+
+```tsx
+// App.tsx
+import { ThemeProvider } from 'styled-components';
+import { GlobalStyles } from './styles/GlobalStyles';
+import { theme } from './styles/theme';
+
+function App() {
+  return (
+    <ThemeProvider theme={theme}>
+      <GlobalStyles />
+      <div className="App">
+        {/* Your app content */}
+      </div>
+    </ThemeProvider>
+  );
+}
+```
+
+## Component Examples
+
+### Basic Styled Component
+
+```tsx
+import styled from 'styled-components';
+
+const Button = styled.button`
+  background-color: ${props => props.theme.colors.primary};
+  color: ${props => props.theme.colors.white};
+  font-size: ${props => props.theme.fontSizes.md};
+  padding: ${props => props.theme.spacing.sm} ${props => props.theme.spacing.md};
+  border: none;
+  border-radius: ${props => props.theme.radii.base};
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+
+  &:hover {
+    transform: translateY(-1px);
+    box-shadow: ${props => props.theme.shadows.md};
+  }
+
+  &:active {
+    transform: translateY(0);
+  }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+`;
+```
+
+### Props-Based Styling
+
+```tsx
+interface ButtonProps {
+  variant?: 'primary' | 'secondary' | 'danger';
+  size?: 'small' | 'medium' | 'large';
+  fullWidth?: boolean;
+}
+
+const StyledButton = styled.button<ButtonProps>`
+  /* Base styles */
+  font-family: ${props => props.theme.fonts.body};
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s;
+  
+  /* Variant styles */
+  ${props => {
+    switch (props.variant) {
+      case 'secondary':
+        return `
+          background-color: ${props.theme.colors.secondary};
+          color: ${props.theme.colors.white};
+        `;
+      case 'danger':
+        return `
+          background-color: ${props.theme.colors.danger};
+          color: ${props.theme.colors.white};
+        `;
+      default:
+        return `
+          background-color: ${props.theme.colors.primary};
+          color: ${props.theme.colors.white};
+        `;
+    }
+  }}
+  
+  /* Size styles */
+  ${props => {
+    switch (props.size) {
+      case 'small':
+        return `
+          padding: ${props.theme.spacing.xs} ${props.theme.spacing.sm};
+          font-size: ${props.theme.fontSizes.sm};
+        `;
+      case 'large':
+        return `
+          padding: ${props.theme.spacing.md} ${props.theme.spacing.lg};
+          font-size: ${props.theme.fontSizes.lg};
+        `;
+      default:
+        return `
+          padding: ${props.theme.spacing.sm} ${props.theme.spacing.md};
+          font-size: ${props.theme.fontSizes.md};
+        `;
+    }
+  }}
+  
+  /* Full width */
+  width: ${props => props.fullWidth ? '100%' : 'auto'};
+`;
+```
+
+### Component Composition
+
+```tsx
+const BaseCard = styled.div`
+  background-color: ${props => props.theme.colors.white};
+  border-radius: ${props => props.theme.radii.lg};
+  box-shadow: ${props => props.theme.shadows.base};
+  padding: ${props => props.theme.spacing.md};
+`;
+
+const CardHeader = styled.div`
+  border-bottom: 1px solid ${props => props.theme.colors.light};
+  padding-bottom: ${props => props.theme.spacing.sm};
+  margin-bottom: ${props => props.theme.spacing.md};
+`;
+
+const CardTitle = styled.h3`
+  font-family: ${props => props.theme.fonts.heading};
+  font-size: ${props => props.theme.fontSizes.xl};
+  color: ${props => props.theme.colors.dark};
+  margin: 0;
+`;
+
+// Usage
+<BaseCard>
+  <CardHeader>
+    <CardTitle>Card Title</CardTitle>
+  </CardHeader>
+  <p>Card content goes here</p>
+</BaseCard>
+```
+
+## Responsive Design
+
+### Media Query Helpers
+
+```tsx
+// media.ts
+export const media = {
+  xs: (styles: string) => `@media (min-width: ${theme.breakpoints.xs}) { ${styles} }`,
+  sm: (styles: string) => `@media (min-width: ${theme.breakpoints.sm}) { ${styles} }`,
+  md: (styles: string) => `@media (min-width: ${theme.breakpoints.md}) { ${styles} }`,
+  lg: (styles: string) => `@media (min-width: ${theme.breakpoints.lg}) { ${styles} }`,
+  xl: (styles: string) => `@media (min-width: ${theme.breakpoints.xl}) { ${styles} }`,
+};
+
+// Usage
+const ResponsiveContainer = styled.div`
+  padding: ${props => props.theme.spacing.sm};
+  
+  ${media.md(`
+    padding: ${theme.spacing.md};
+  `)}
+  
+  ${media.lg(`
+    padding: ${theme.spacing.lg};
+    max-width: 1200px;
+    margin: 0 auto;
+  `)}
+`;
+```
+
+### CSS Helper for Complex Styles
+
+```tsx
+import styled, { css } from 'styled-components';
+
+const truncateText = css`
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+`;
+
+const flexCenter = css`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+`;
+
+const Title = styled.h1`
+  ${truncateText}
+  font-size: ${props => props.theme.fontSizes['2xl']};
+  max-width: 300px;
+`;
+
+const CenteredBox = styled.div`
+  ${flexCenter}
+  min-height: 100vh;
+`;
+```
+
+## Animations
+
+```tsx
+import styled, { keyframes } from 'styled-components';
+
+const rotate = keyframes`
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+`;
+
+const fadeIn = keyframes`
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+`;
+
+const Spinner = styled.div`
+  display: inline-block;
+  width: 40px;
+  height: 40px;
+  border: 3px solid ${props => props.theme.colors.light};
+  border-top-color: ${props => props.theme.colors.primary};
+  border-radius: 50%;
+  animation: ${rotate} 1s linear infinite;
+`;
+
+const FadeInContent = styled.div`
+  animation: ${fadeIn} 0.5s ease-in;
+`;
+```
+
+## Performance Optimization
+
+### Proper Prop Filtering
+
+```tsx
+const Input = styled.input.withConfig({
+  shouldForwardProp: (prop) => !['customProp', 'anotherCustomProp'].includes(prop),
+})<{ customProp?: string; anotherCustomProp?: boolean }>`
+  /* styles using customProp */
+  color: ${props => props.customProp || 'black'};
+`;
+```
+
+### Using attrs for Static Props
+
+```tsx
+const PasswordInput = styled.input.attrs(props => ({
+  type: 'password',
+  placeholder: props.placeholder || 'Enter password',
+}))`
+  padding: ${props => props.theme.spacing.sm};
+  border: 1px solid ${props => props.theme.colors.light};
+  border-radius: ${props => props.theme.radii.base};
+`;
+```
+
+## TypeScript Integration
+
+### Extending HTML Element Props
+
+```tsx
+import styled from 'styled-components';
+
+interface StyledInputProps extends React.InputHTMLAttributes<HTMLInputElement> {
+  hasError?: boolean;
+}
+
+const StyledInput = styled.input<StyledInputProps>`
+  padding: ${props => props.theme.spacing.sm};
+  border: 1px solid ${props => 
+    props.hasError ? props.theme.colors.danger : props.theme.colors.light
+  };
+  border-radius: ${props => props.theme.radii.base};
+  
+  &:focus {
+    outline: none;
+    border-color: ${props => props.theme.colors.primary};
+  }
+`;
+```
+
+### Theme Type Declaration
+
+```tsx
+// styled.d.ts
+import 'styled-components';
+import { Theme } from './theme';
+
+declare module 'styled-components' {
+  export interface DefaultTheme extends Theme {}
+}
+```
+
+## Global Styles
+
+```tsx
+import { createGlobalStyle } from 'styled-components';
+
+export const GlobalStyles = createGlobalStyle`
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
+
+  html {
+    font-size: 16px;
+    scroll-behavior: smooth;
+  }
+
+  body {
+    font-family: ${props => props.theme.fonts.body};
+    color: ${props => props.theme.colors.dark};
+    background-color: ${props => props.theme.colors.white};
+    line-height: 1.5;
+  }
+
+  a {
+    color: ${props => props.theme.colors.primary};
+    text-decoration: none;
+    
+    &:hover {
+      text-decoration: underline;
+    }
+  }
+
+  ::selection {
+    background-color: ${props => props.theme.colors.primary};
+    color: ${props => props.theme.colors.white};
+  }
+`;
+```
+
+## Best Practices
+
+### Do's
+- Use semantic component names that describe their purpose
+- Keep styled components close to where they're used
+- Use theme values consistently instead of hardcoded values
+- Create reusable style utilities with the css helper
+- Implement proper TypeScript types for all props
+- Use shouldForwardProp to prevent invalid HTML attributes
+- Test components with different themes
+
+### Don'ts
+- Don't create overly nested styled components
+- Don't use inline styles when styled-components would be better
+- Don't forget to wrap your app with ThemeProvider
+- Don't create styled components inside render methods
+- Don't mix styled-components with CSS modules in the same component
+
+This comprehensive guide provides patterns and examples for effective styled-components usage in modern React applications.

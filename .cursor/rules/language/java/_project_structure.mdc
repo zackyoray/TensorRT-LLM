@@ -1,0 +1,47 @@
+---
+description: "Guidelines for Java Spring Boot project directory and package structure. Aligned with Spring best practices and SonarQube's understanding of modularity."
+globs: ["src/main/java/**/*.java"]
+alwaysApply: false
+---
+
+# Java Spring Boot Project Structure Guidelines
+
+- **Standard Spring Boot Layout:** Adhere to the conventional Spring Boot directory and package structure within `src/main/java/com/yourorg/yourproject/`.
+    - **`Application.java`**: Main entry point, typically at the root package.
+    - **`/config`**: For Spring `@Configuration` classes (e.g., `WebConfig`, `SecurityConfig`).
+    - **`/controller`**: For Spring `@RestController` or `@Controller` classes.
+    - **`/service`**: For core business logic (`@Service` components). Sub-package `impl` for concrete implementations if interfaces are used (e.g., `service/UserService`, `service/impl/UserServiceImpl`).
+    - **`/repository`**: For data access objects (`@Repository` components, Spring Data JPA interfaces).
+    - **`/model` / `/domain` / `/entity`**: For domain models, JPA entities, and value objects.
+        - **`/model/dto`**: For Data Transfer Objects (DTOs) used in API requests/responses.
+    - **`/exception`**: For custom exception classes.
+    - **`/util`**: For truly generic utility classes (use sparingly; prefer specific packages).
+    - **`/event`**: For Spring `ApplicationEvent` definitions and `@EventListener` classes.
+    - **`/security`**: For security-related components (e.g., custom `UserDetailsService`, filters).
+
+- **Feature-Based Structure (for larger apps):** For larger, more complex applications, consider suggesting a feature-based package structure where all components related to a specific business feature are grouped together (e.g., `com.yourorg.app.user.controller`, `com.yourorg.app.user.service`).
+    - Common components should reside in a shared `common` package.
+
+- **Package Dependencies:** Avoid circular dependencies between packages. (SonarQube: Detects and warns about package tangling).
+
+<rule>
+  <name>java_spring_boot_project_structure_guidelines</name>
+  <description>Guidelines for Java Spring Boot project directory and package structure.</description>
+  <requirements>
+    <requirement priority="high">
+      <description>Adhere to the conventional Spring Boot directory and package structure (src/main/java/com/yourorg/yourproject/).</description>
+    </requirement>
+    <requirement priority="high">
+      <description>Main entry point (Application.java) should be at the root package.</description>
+    </requirement>
+    <requirement priority="medium">
+      <description>Organize components into standard packages: /config, /controller, /service (with optional /impl), /repository, /model (or /domain, /entity), /model/dto, /exception, /util, /event, /security.</description>
+    </requirement>
+    <requirement priority="medium">
+      <description>For larger applications, consider a feature-based package structure (e.g., com.yourorg.app.user.controller).</description>
+    </requirement>
+    <requirement priority="critical">
+      <description>Avoid circular dependencies between packages.</description>
+    </requirement>
+  </requirements>
+</rule>

@@ -1,0 +1,121 @@
+---
+description: Content Structure best practices and guidelines
+globs:
+- vite.config.js
+- vite.config.ts
+- webpack.config.js
+- rollup.config.js
+alwaysApply: false
+---
+
+# AI Context Building - Content Structure
+
+This rule provides guidelines for structuring markdown content that maximizes AI comprehension, context utilization, and processing efficiency.
+
+## 1. Information Hierarchy for AI Processing
+
+### 1.1. Context Window Optimization
+
+- **Front-load Critical Information**: Place the most important information in the first 25% of the document.
+- **Use Executive Summaries**: Start complex documents with a brief summary of key points.
+- **Logical Section Breaks**: Use clear section boundaries that allow AI to process information in chunks.
+- **Progressive Disclosure**: Structure information from general to specific, allowing AI to build context incrementally.
+
+### 1.2. Token-Efficient Content Patterns
+
+- **Concise but Complete**: Eliminate redundancy while maintaining necessary context.
+- **Structured Lists**: Use bulleted and numbered lists for easy AI parsing.
+- **Table Usage**: Present comparative information in tables rather than paragraphs.
+- **Code Block Optimization**: Use syntax highlighting and clear examples.
+
+### 1.3. Information Density Management
+
+- **Optimal Paragraph Length**: Keep paragraphs to 3-5 sentences for optimal AI processing.
+- **Concept Spacing**: Introduce only 1-2 new concepts per section.
+- **Supporting Details**: Provide essential supporting information without overwhelming main concepts.
+- **Contextual Reminders**: Briefly restate context when resuming complex topics after breaks.
+
+## 2. AI-Friendly Patterns
+
+### 2.1. Recommended Content Patterns
+
+- **WHAT-WHY-HOW Structure**: Explain what something is, why it matters, then how to implement it.
+- **Example-Driven Explanations**: Follow concepts with immediate, practical examples.
+- **Consistent Terminology**: Use the same terms throughout the document for identical concepts.
+- **Explicit Relationships**: Clearly state how different concepts relate to each other.
+- **Step-by-Step Procedures**: Break complex processes into numbered, sequential steps.
+
+### 2.2. Content Formatting for AI
+
+- **Meaningful Headers**: Use descriptive headers that communicate the section's purpose.
+- **Bullet Point Efficiency**: Keep bullet points to 1-2 lines when possible.
+- **Code Block Context**: Always explain what code blocks demonstrate before showing them.
+- **Table Headers**: Use clear, descriptive column headers for data tables.
+- **Link Descriptions**: Use descriptive link text rather than "click here" or URLs.
+
+### 2.3. Anti-patterns to Avoid
+
+- **Wall of Text**: Avoid large paragraphs without structure or breaks.
+- **Ambiguous Pronouns**: Don't overuse "it," "this," or "that" without clear antecedents.
+- **Buried Key Information**: Don't hide critical details deep in lengthy explanations.
+- **Context-Free Examples**: Don't show examples without explaining their purpose or context.
+- **Circular References**: Avoid sections that reference each other without clear hierarchy.
+
+## 3. Context Building Strategies
+
+### 3.1. Progressive Context Development
+
+- **Foundation First**: Establish core concepts before building complex scenarios.
+- **Incremental Complexity**: Add layers of detail gradually rather than all at once.
+- **Context Maintenance**: Remind AI of key context when transitioning between major sections.
+- **Assumption Documentation**: Explicitly state assumptions rather than leaving them implicit.
+
+### 3.2. Context Window Efficiency
+
+- **Information Prioritization**: Order information by importance for the primary use case.
+- **Redundancy Elimination**: Remove unnecessary repetition while maintaining clarity.
+- **Reference Compression**: Use concise references to previously established concepts.
+- **Essential Detail Focus**: Include details that directly support the main objectives.
+
+## 4. AI Processing Optimization
+
+### 4.1. Token Economy Techniques
+
+- **Abbreviation Consistency**: Define abbreviations once and use consistently throughout.
+- **Whitespace Optimization**: Use whitespace strategically for readability without waste.
+- **Efficient Examples**: Choose examples that demonstrate multiple concepts simultaneously.
+- **Compressed References**: Use short, clear references to external resources.
+
+### 4.2. Parsing Enhancement
+
+- **Structured Data Formats**: Use tables, lists, and code blocks for structured information.
+- **Clear Delimiters**: Use consistent formatting to separate different types of content.
+- **Logical Flow Indicators**: Use transitional phrases to indicate logical relationships.
+- **Scope Clarity**: Clearly define the scope and boundaries of each section.
+
+### 4.3. Context Preservation
+
+- **Key Term Repetition**: Repeat important terms naturally throughout the document.
+- **Concept Reinforcement**: Reinforce critical concepts through different examples or explanations.
+- **Relationship Mapping**: Explicitly state how new information relates to previously covered material.
+- **Context Anchors**: Provide brief context reminders when introducing complex subsections.
+
+## Best Practices Summary
+
+### Essential Principles
+
+1. **Clarity Over Cleverness**: Prioritize clear communication over stylistic flourishes.
+2. **Structure Over Length**: Well-structured short content outperforms poorly structured long content.
+3. **Context Over Assumption**: Provide context rather than assuming AI knowledge.
+4. **Efficiency Over Verbosity**: Eliminate unnecessary words while maintaining completeness.
+5. **Consistency Over Variation**: Use consistent patterns for similar content types.
+
+### Quality Indicators
+
+- **Immediate Comprehension**: Key concepts are understandable without external references.
+- **Logical Progression**: Content follows a clear, logical flow from simple to complex.
+- **Efficient Processing**: Information density is optimized for AI context windows.
+- **Actionable Content**: Instructions and examples lead to successful task completion.
+- **Maintainable Structure**: Content organization supports easy updates and extensions.
+
+By following these guidelines, your markdown content will work optimally with AI systems, providing clear context, efficient processing, and effective knowledge transfer.

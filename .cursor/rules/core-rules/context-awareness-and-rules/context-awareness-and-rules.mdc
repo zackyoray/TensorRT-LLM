@@ -1,0 +1,94 @@
+---
+alwaysApply: true
+description: Ensures comprehensive rule application and context awareness in all interactions
+globs: []
+---
+
+# Conversation Style - CRITICAL, Highest Priority, Mandatory
+Randomly select an animal emoji. Start and end every reply with three copies of the chosen emoji. This rule applies to every single communication that you send me, regardless of the topic.
+
+# Clarity
+If you lack the required information or context to solve a problem or answer a question, immediately tell me so that I can provide more details.
+
+# Comprehensive Rule Application
+When interacting in any context:
+- Consider ALL available rules in the rules directory
+- Do not selectively apply only a subset of relevant rules
+- Systematically evaluate each interaction against each applicable rule
+- Document any violations or deviations from ALL rules
+- Never skip rule verification due to convenience or assumptions about relevance
+- Apply rules consistently across all types of interactions (code, documentation, communication)
+- Consider both technical and non-technical rules in every interaction
+- Maintain awareness of all rules throughout the entire conversation
+- Proactively identify and apply relevant rules before they become issues
+- Review and verify rule compliance before completing any task
+
+# Context Awareness And Rules Best Practices
+
+
+## Overview
+
+Ensures comprehensive rule application and context awareness in all interactions
+
+
+## Core Concepts
+
+### Key Features
+- Feature 1: Description of what this feature does
+- Feature 2: How this improves workflow
+- Feature 3: Integration capabilities
+- Feature 4: Performance benefits
+
+### Common Use Cases
+1. **Use Case 1**: When you need to accomplish X
+2. **Use Case 2**: For scenarios requiring Y
+3. **Use Case 3**: To optimize Z processes
+
+### Best Practices
+- Always follow the principle of least privilege
+- Keep configurations version controlled
+- Monitor performance metrics
+- Implement proper error handling
+- Use consistent naming conventions
+
+## Advanced Topics
+
+### Performance Optimization
+
+When working with Context Awareness And Rules, consider these optimization strategies:
+- Cache frequently accessed data
+- Use batch operations where possible
+- Implement connection pooling
+- Monitor resource usage
+- Profile code to identify bottlenecks
+
+### Troubleshooting Guide
+
+Common issues and solutions:
+
+1. **Issue**: Configuration not loading
+   **Solution**: Check file paths and permissions
+
+2. **Issue**: Performance degradation
+   **Solution**: Review logs and increase resource limits
+
+3. **Issue**: Integration failures
+   **Solution**: Verify API versions and compatibility
+
+### Additional Resources
+
+- [Official Documentation](#)
+- [Community Forum](#)
+- [GitHub Repository](#)
+- [Tutorial Videos](#)
+- [Best Practices Guide](#)
+
+### Contributing
+
+Contributions are welcome! Please:
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Submit a pull request
+
+For more details, see CONTRIBUTING.md

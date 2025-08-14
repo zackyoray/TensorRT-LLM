@@ -1,0 +1,541 @@
+---
+description: Vite Development Best Practices
+globs:
+- vite.config.js
+- vite.config.ts
+- webpack.config.js
+- rollup.config.js
+alwaysApply: false
+---
+
+# Vite Development Best Practices
+
+## Overview
+
+Vite is a modern build tool that provides faster and leaner development experience for modern web projects. It leverages native ES modules, esbuild for pre-bundling, and Rollup for production builds to deliver exceptional performance.
+
+## Core Principles
+
+- Use Vite for fast frontend development with hot module replacement (HMR)
+- Configure Vite with appropriate plugins for your framework (React, Vue, etc.)
+- Leverage Vite's native ES modules support for faster development builds
+- Implement proper environment configuration for development and production
+- Use Vite's built-in TypeScript support without additional transpilation
+- Configure Vite for optimal production builds with code splitting and tree shaking
+- Use Vite plugins for additional functionality (PWA, legacy browser support, etc.)
+- Implement proper asset handling and optimization in Vite configuration
+- Configure Vite dev server with proxy settings for API development
+- Use Vite's build analysis tools to optimize bundle size and performance
+
+## Configuration
+
+### Basic Vite Configuration
+
+```javascript
+// vite.config.js
+import { defineConfig } from 'vite'
+import react from '@vitejs/plugin-react'
+import { resolve } from 'path'
+
+export default defineConfig({
+  plugins: [react()],
+  
+  resolve: {
+    alias: {
+      '@': resolve(__dirname, './src'),
+      '@components': resolve(__dirname, './src/components'),
+      '@utils': resolve(__dirname, './src/utils'),
+      '@assets': resolve(__dirname, './src/assets'),
+    }
+  },
+  
+  server: {
+    port: 3000,
+    open: true,
+    cors: true,
+    proxy: {
+      '/api': {
+        target: 'http://localhost:8080',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api/, '')
+      }
+    }
+  },
+  
+  build: {
+    outDir: 'dist',
+    sourcemap: true,
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          vendor: ['react', 'react-dom'],
+          utils: ['lodash', 'axios']
+        }
+      }
+    }
+  }
+})
+```
+
+### TypeScript Configuration
+
+```typescript
+// vite.config.ts
+import { defineConfig, loadEnv } from 'vite'
+import react from '@vitejs/plugin-react'
+import tsconfigPaths from 'vite-tsconfig-paths'
+import { visualizer } from 'rollup-plugin-visualizer'
+
+export default defineConfig(({ command, mode }) => {
+  const env = loadEnv(mode, process.cwd(), '')
+  
+  return {
+    plugins: [
+      react({
+        jsxImportSource: '@emotion/react',
+        babel: {
+          plugins: ['@emotion/babel-plugin']
+        }
+      }),
+      tsconfigPaths(),
+      visualizer({
+        open: true,
+        gzipSize: true,
+        brotliSize: true
+      })
+    ],
+    
+    define: {
+      __APP_VERSION__: JSON.stringify(process.env.npm_package_version),
+      __BUILD_TIME__: JSON.stringify(new Date().toISOString())
+    },
+    
+    optimizeDeps: {
+      include: ['react', 'react-dom'],
+      exclude: ['@vite/client', '@vite/env']
+    },
+    
+    css: {
+      modules: {
+        localsConvention: 'camelCase',
+        generateScopedName: '[name]__[local]___[hash:base64:5]'
+      },
+      preprocessorOptions: {
+        scss: {
+          additionalData: `@import "@/styles/variables.scss";`
+        }
+      }
+    }
+  }
+})
+```
+
+## Framework Integration
+
+### React + Vite Setup
+
+```typescript
+// vite.config.ts for React
+import { defineConfig } from 'vite'
+import react from '@vitejs/plugin-react-swc'
+import svgr from 'vite-plugin-svgr'
+
+export default defineConfig({
+  plugins: [
+    react(),
+    svgr({
+      svgrOptions: {
+        icon: true,
+      }
+    })
+  ],
+  
+  esbuild: {
+    logOverride: { 'this-is-undefined-in-esm': 'silent' }
+  }
+})
+
+// main.tsx
+import React from 'react'
+import ReactDOM from 'react-dom/client'
+import App from './App'
+import './index.css'
+
+ReactDOM.createRoot(document.getElementById('root')!).render(
+  <React.StrictMode>
+    <App />
+  </React.StrictMode>
+)
+```
+
+### Vue 3 + Vite Setup
+
+```typescript
+// vite.config.ts for Vue
+import { defineConfig } from 'vite'
+import vue from '@vitejs/plugin-vue'
+import vueJsx from '@vitejs/plugin-vue-jsx'
+import Components from 'unplugin-vue-components/vite'
+import AutoImport from 'unplugin-auto-import/vite'
+
+export default defineConfig({
+  plugins: [
+    vue(),
+    vueJsx(),
+    Components({
+      resolvers: [
+        // Auto import components
+      ]
+    }),
+    AutoImport({
+      imports: ['vue', 'vue-router', 'pinia'],
+      dts: 'src/auto-imports.d.ts'
+    })
+  ]
+})
+```
+
+## Environment Configuration
+
+### Managing Environment Variables
+
+```typescript
+// vite.config.ts
+import { defineConfig, loadEnv } from 'vite'
+
+export default defineConfig(({ mode }) => {
+  const env = loadEnv(mode, process.cwd())
+  
+  return {
+    define: {
+      'process.env.VITE_API_URL': JSON.stringify(env.VITE_API_URL),
+      'process.env.VITE_APP_TITLE': JSON.stringify(env.VITE_APP_TITLE)
+    }
+  }
+})
+
+// .env.development
+VITE_API_URL=http://localhost:3000/api
+VITE_APP_TITLE=My App (Dev)
+
+// .env.production
+VITE_API_URL=https://api.example.com
+VITE_APP_TITLE=My App
+
+// Using in application
+const apiUrl = import.meta.env.VITE_API_URL
+const appTitle = import.meta.env.VITE_APP_TITLE
+```
+
+## Production Optimization
+
+### Build Optimization
+
+```javascript
+// vite.config.js
+export default defineConfig({
+  build: {
+    target: 'es2015',
+    minify: 'terser',
+    terserOptions: {
+      compress: {
+        drop_console: true,
+        drop_debugger: true
+      }
+    },
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (id.includes('node_modules')) {
+            if (id.includes('@mui')) {
+              return 'mui'
+            }
+            if (id.includes('react')) {
+              return 'react-vendor'
+            }
+            return 'vendor'
+          }
+        },
+        chunkFileNames: 'assets/js/[name]-[hash].js',
+        entryFileNames: 'assets/js/[name]-[hash].js',
+        assetFileNames: ({ name }) => {
+          if (/\.(gif|jpe?g|png|svg)$/.test(name ?? '')) {
+            return 'assets/images/[name]-[hash][extname]'
+          }
+          if (/\.css$/.test(name ?? '')) {
+            return 'assets/css/[name]-[hash][extname]'
+          }
+          return 'assets/[name]-[hash][extname]'
+        }
+      }
+    },
+    chunkSizeWarningLimit: 1000,
+    reportCompressedSize: false
+  }
+})
+```
+
+### PWA Configuration
+
+```typescript
+// vite.config.ts
+import { VitePWA } from 'vite-plugin-pwa'
+
+export default defineConfig({
+  plugins: [
+    VitePWA({
+      registerType: 'autoUpdate',
+      includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'masked-icon.svg'],
+      manifest: {
+        name: 'My Progressive Web App',
+        short_name: 'MyPWA',
+        theme_color: '#ffffff',
+        icons: [
+          {
+            src: 'pwa-192x192.png',
+            sizes: '192x192',
+            type: 'image/png'
+          },
+          {
+            src: 'pwa-512x512.png',
+            sizes: '512x512',
+            type: 'image/png'
+          }
+        ]
+      },
+      workbox: {
+        runtimeCaching: [
+          {
+            urlPattern: /^https:\/\/api\.example\.com\/.*/i,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'api-cache',
+              expiration: {
+                maxEntries: 10,
+                maxAgeSeconds: 60 * 60 * 24 * 7 // 1 week
+              },
+              cacheableResponse: {
+                statuses: [0, 200]
+              }
+            }
+          }
+        ]
+      }
+    })
+  ]
+})
+```
+
+## Development Features
+
+### Hot Module Replacement
+
+```typescript
+// main.ts
+if (import.meta.hot) {
+  import.meta.hot.accept('./modules/updated-module', (newModule) => {
+    // Handle the updated module
+    newModule?.doSomething()
+  })
+  
+  import.meta.hot.dispose(() => {
+    // Cleanup side effects
+  })
+}
+
+// Component HMR
+if (import.meta.hot) {
+  import.meta.hot.accept()
+}
+```
+
+### Custom Dev Server Middleware
+
+```typescript
+// vite.config.ts
+export default defineConfig({
+  server: {
+    middlewareMode: false,
+    configureServer(server) {
+      server.middlewares.use((req, res, next) => {
+        // Custom middleware logic
+        if (req.url?.startsWith('/custom-api')) {
+          res.statusCode = 200
+          res.end('Custom response')
+          return
+        }
+        next()
+      })
+    }
+  }
+})
+```
+
+## Asset Handling
+
+### Static Asset Import
+
+```typescript
+// Import images
+import logo from '@/assets/logo.png'
+import bgImage from '@/assets/background.jpg?url'
+import workletURL from '@/assets/worklet.js?worker&url'
+
+// Import CSS
+import styles from './styles.module.css'
+
+// Import JSON
+import config from './config.json'
+
+// Import raw content
+import shader from './shader.glsl?raw'
+
+// Dynamic imports
+const modules = import.meta.glob('./modules/*.ts')
+```
+
+### Asset Optimization
+
+```javascript
+// vite.config.js
+import imagemin from 'vite-plugin-imagemin'
+
+export default defineConfig({
+  plugins: [
+    imagemin({
+      gifsicle: {
+        optimizationLevel: 7,
+        interlaced: false
+      },
+      optipng: {
+        optimizationLevel: 7
+      },
+      mozjpeg: {
+        quality: 80
+      },
+      pngquant: {
+        quality: [0.8, 0.9],
+        speed: 4
+      },
+      svgo: {
+        plugins: [
+          {
+            name: 'removeViewBox'
+          },
+          {
+            name: 'removeEmptyAttrs',
+            active: false
+          }
+        ]
+      }
+    })
+  ]
+})
+```
+
+## Testing Integration
+
+### Vitest Configuration
+
+```typescript
+// vite.config.ts
+import { defineConfig } from 'vite'
+import { configDefaults } from 'vitest/config'
+
+export default defineConfig({
+  test: {
+    globals: true,
+    environment: 'jsdom',
+    setupFiles: './src/test/setup.ts',
+    coverage: {
+      reporter: ['text', 'json', 'html'],
+      exclude: [
+        'node_modules/',
+        'src/test/',
+        '**/*.d.ts',
+        '**/*.config.*',
+        '**/mockData/**'
+      ]
+    },
+    include: ['src/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}'],
+    exclude: [...configDefaults.exclude, 'e2e/*']
+  }
+})
+```
+
+## Performance Monitoring
+
+### Bundle Analysis
+
+```typescript
+// vite.config.ts
+import { visualizer } from 'rollup-plugin-visualizer'
+
+export default defineConfig({
+  plugins: [
+    visualizer({
+      template: 'treemap',
+      open: true,
+      gzipSize: true,
+      brotliSize: true,
+      filename: 'bundle-analysis.html'
+    })
+  ]
+})
+```
+
+### Build Performance
+
+```javascript
+// vite.config.js
+export default defineConfig({
+  build: {
+    // Improve build performance
+    cssCodeSplit: true,
+    // Use esbuild for minification (faster than terser)
+    minify: 'esbuild',
+    // Skip source map generation for faster builds
+    sourcemap: false,
+    // Increase chunk size warning limit
+    chunkSizeWarningLimit: 1500
+  },
+  
+  // Optimize dependency pre-bundling
+  optimizeDeps: {
+    entries: ['./src/main.tsx'],
+    include: ['react', 'react-dom'],
+    exclude: ['@vite/client', '@vite/env']
+  }
+})
+```
+
+## Best Practices
+
+### Do's
+- Use native ES modules for development
+- Configure proper aliases for clean imports
+- Implement code splitting for large applications
+- Use environment variables for configuration
+- Optimize images and assets
+- Configure proper caching strategies
+- Monitor bundle sizes
+- Use TypeScript for better development experience
+
+### Don'ts
+- Don't include large libraries in optimizeDeps
+- Don't use CommonJS modules when ES modules are available
+- Don't skip source maps in development
+- Don't ignore console warnings about bundle size
+- Don't use synchronous imports for large modules
+- Don't configure unnecessary plugins
+
+This comprehensive guide ensures optimal development experience and production performance with Vite.
+  
+
+- **Conclusion:**
+  - Following these best practices will help you build efficient, maintainable, and secure applications with Vite.  Continuously review and update your practices as the library and ecosystem evolve.
+This comprehensive guide ensures optimal development experience and production performance with Vite.
+  
+
+- **Conclusion:**
+  - Following these best practices will help you build efficient, maintainable, and secure applications with Vite.  Continuously review and update your practices as the library and ecosystem evolve.

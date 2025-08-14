@@ -1,0 +1,236 @@
+---
+description: Maintains professional documentation standards without emojis in markdown documents
+globs: ["*.md", "*.mdx", "*.markdown", "README*", "CONTRIBUTING*", "CHANGELOG*", "docs/**/*"]
+alwaysApply: false
+---
+
+# Professional Documentation Standards
+
+## Scope
+This rule applies ONLY to markdown document generation and technical documentation files. Chat interactions and conversational responses are exempt from these restrictions.
+
+## Critical Rules for Documentation Files
+
+- NEVER use emojis in markdown documents, technical reports, or formal documentation files
+- Maintain formal, professional tone in all generated documentation
+- Use bullet points or numbered lists instead of emoji indicators
+- Replace emoji emphasis with proper markdown formatting (bold, italic)
+- Use consistent terminology and avoid colloquialisms
+- Follow corporate style guides and brand standards
+
+## Professional Formatting Standards
+
+### Instead of Emojis, Use:
+- **Bold text** for emphasis
+- *Italic text* for highlighting
+- `Code formatting` for technical terms
+- > Blockquotes for important notes
+- Proper headings (##, ###) for structure
+- Standard markdown lists (-, *, 1.)
+
+## Examples
+
+### Professional Documentation Format
+
+<example>
+# OpenShift Cluster Maintenance Procedure
+
+## Overview
+This document outlines the standard procedure for performing routine maintenance on OpenShift clusters.
+
+## Prerequisites
+- Administrative access to the cluster
+- Maintenance window scheduled and communicated
+- Backup verification completed
+
+## Procedure
+
+### Pre-Maintenance Steps
+1. **Verify cluster health**: Check all nodes are in Ready state
+2. **Backup etcd**: Ensure current backup is available
+3. **Notify stakeholders**: Send maintenance start notification
+
+### Maintenance Steps
+1. **Drain worker nodes**: Remove workloads safely
+2. **Apply updates**: Install security patches and updates  
+3. **Restart services**: Restart OpenShift services as needed
+
+### Post-Maintenance Verification
+1. **Health checks**: Verify all components are operational
+2. **Application validation**: Confirm applications are responding
+3. **Monitoring**: Check metrics and alerts are functioning
+
+## Rollback Procedure
+If issues occur during maintenance:
+1. **Stop current procedure** immediately
+2. **Assess impact** on running workloads
+3. **Execute rollback** to previous stable state
+4. **Document issues** for future reference
+
+**Important**: Always have a tested rollback plan before beginning maintenance.
+</example>
+
+<example type="invalid">
+# Bad Example - Contains Emojis
+
+# OpenShift Maintenance 🔧
+
+## Overview  
+This doc shows how to maintain your cluster! 😊
+
+## Steps
+1. 🚀 Start maintenance
+2. ✅ Check everything is good  
+3. ⚠️ Watch for problems
+4. 🎉 Celebrate when done!
+
+**Note**: This is way too informal! ❌
+</example>
+
+## Incident Report Format
+
+<example>
+# Incident Report: Database Connection Failures
+
+**Date**: 2024-01-15  
+**Duration**: 14:30 - 15:45 UTC  
+**Severity**: High  
+**Status**: Resolved  
+
+## Summary
+Database connection pool exhaustion caused application timeouts affecting approximately 15% of user sessions.
+
+## Impact
+- **Users affected**: ~1,500 active sessions
+- **Services impacted**: User authentication, order processing
+- **Revenue impact**: Estimated $12,000 in delayed transactions
+
+## Root Cause
+Connection pool maximum size insufficient for peak traffic load. Default pool size of 50 connections overwhelmed during traffic spike.
+
+## Resolution
+1. **Immediate**: Increased connection pool size from 50 to 200
+2. **Monitoring**: Added connection pool utilization alerts
+3. **Documentation**: Updated capacity planning guidelines
+
+## Prevention
+- Implement auto-scaling connection pools
+- Enhanced load testing to include connection pool stress
+- Regular review of database performance metrics
+
+## Timeline
+- **14:30**: First alerts received
+- **14:35**: Incident declared, response team engaged
+- **14:50**: Root cause identified
+- **15:15**: Fix implemented
+- **15:45**: Service fully restored, incident closed
+</example>
+
+## Runbook Format Standards
+
+<example>
+# Runbook: Restart Stuck Pod
+
+## Purpose
+Procedure to safely restart pods that are stuck in pending or error states.
+
+## When to Use
+- Pod status shows "Pending" for >5 minutes
+- Pod status shows "CrashLoopBackOff"
+- Pod events indicate resource constraints
+
+## Prerequisites
+- kubectl access to target namespace
+- Understanding of application dependencies
+- Verification that restart is appropriate action
+
+## Steps
+
+### 1. Investigate Pod Status
+```bash
+kubectl get pod <pod-name> -n <namespace> -o wide
+kubectl describe pod <pod-name> -n <namespace>
+kubectl logs <pod-name> -n <namespace> --previous
+```
+
+### 2. Check Resource Availability
+```bash
+kubectl top nodes
+kubectl describe node <node-name>
+```
+
+### 3. Safe Pod Restart
+```bash
+# For deployment-managed pods
+kubectl rollout restart deployment/<deployment-name> -n <namespace>
+
+# For standalone pods (use with caution)
+kubectl delete pod <pod-name> -n <namespace>
+```
+
+### 4. Verify Recovery
+```bash
+kubectl get pods -n <namespace> -w
+kubectl logs <new-pod-name> -n <namespace>
+```
+
+## Expected Results
+- New pod should reach "Running" state within 2-3 minutes
+- Application should respond to health checks
+- No error messages in pod logs
+
+## Escalation
+If pod continues to fail after restart:
+1. **Check cluster resources**: May need node scaling
+2. **Review application logs**: May indicate code issues  
+3. **Contact development team**: For application-specific problems
+</example>
+
+## Architecture Documentation Format
+
+<example>
+# OpenShift Data Foundation Storage Architecture
+
+## Overview
+This document describes the storage architecture for our OpenShift Data Foundation (ODF) implementation.
+
+## Components
+
+### Ceph Cluster
+- **Storage nodes**: 6 dedicated storage nodes with NVMe SSDs
+- **Replication factor**: 3 replicas across failure domains
+- **Pool configuration**: Separate pools for block and file storage
+
+### Storage Classes
+- **fast-ssd**: NVMe-backed storage for databases
+- **standard**: SATA SSD storage for general workloads  
+- **backup**: High-capacity storage for backups
+
+### Access Methods
+- **RBD (Block)**: For persistent volumes requiring block storage
+- **CephFS (File)**: For shared file system access
+- **Object Storage**: S3-compatible interface for object data
+
+## Performance Characteristics
+
+| Storage Class | IOPS | Throughput | Use Case |
+|---------------|------|------------|----------|
+| fast-ssd | 50,000+ | 1 GB/s | Databases, caches |
+| standard | 10,000+ | 500 MB/s | Application data |
+| backup | 1,000+ | 100 MB/s | Backup, archive |
+
+## Monitoring and Alerting
+- **Cluster health**: Ceph cluster status monitoring
+- **Performance**: IOPS and latency tracking  
+- **Capacity**: Storage utilization alerts at 80% threshold
+- **Reliability**: Automatic monitoring of failed disks and nodes
+</example>
+
+## Key Benefits of Professional Format
+
+1. **Clarity**: Information is easier to scan and understand
+2. **Searchability**: Text-based content is fully searchable
+3. **Accessibility**: Compatible with screen readers and assistive technology
+4. **Translation**: Content can be easily translated by automated tools
+5. **Archival**: Maintains formatting in all document export formats
+6. **Brand consistency**: Aligns with corporate communication standards

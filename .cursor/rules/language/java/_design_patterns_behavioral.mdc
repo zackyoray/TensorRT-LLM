@@ -1,0 +1,44 @@
+---
+description: "Directives for using behavioral design patterns in Java Spring Boot, considering Spring's idioms and SonarQube's quality goals."
+globs: ["src/main/java/**/*.java"]
+alwaysApply: false
+---
+
+# Java Behavioral Design Patterns
+
+- **Strategy Pattern:**
+    - **When to use:** Encapsulating algorithms into separate classes that implement a common interface. Suggest this when a single method has a large `switch` statement based on behavior (e.g., different payment processing strategies, different validation rules).
+    - **Implementation:** Define a strategy interface, create concrete strategy classes, and use Spring's DI to inject the appropriate strategy at runtime.
+- **Observer Pattern:**
+    - **When to use:** For a one-to-many dependency where objects (observers) react to state changes or events from another object (subject).
+    - **Implementation:** Suggest using Spring's `ApplicationEventPublisher` and `@EventListener` mechanism as the idiomatic approach for decoupling event producers and consumers.
+- **Command Pattern:**
+    - **When to use:** Encapsulating a request as an object, thereby allowing for parameterization of clients with different requests, queuing, logging, or support for undoable operations. Often seen in message-driven architectures or batch processing.
+- **Template Method:**
+    - **Spring Templates:** Leverage existing Spring template classes like `JdbcTemplate`, `JpaTemplate`, `RestTemplate`, `KafkaTemplate`, etc., for common algorithm structures where only specific steps vary.
+    - **When to implement:** If creating a custom algorithm with a fixed skeleton but varying steps, define an abstract class with a template method and abstract methods for varying steps.
+- **Chain of Responsibility:**
+    - **When to use:** Passing a request along a chain of handlers.
+    - **Implementation:** Common in Spring Security filter chains, Servlet filters, or custom processing pipelines.
+
+<rule>
+  <name>java_behavioral_design_patterns</name>
+  <description>Directives for using behavioral design patterns in Java Spring Boot.</description>
+  <requirements>
+    <requirement priority="high">
+      <description>Apply Strategy Pattern to encapsulate algorithms into separate classes, especially for large switch statements.</description>
+    </requirement>
+    <requirement priority="high">
+      <description>Use Spring's ApplicationEventPublisher and @EventListener for Observer Pattern implementations.</description>
+    </requirement>
+    <requirement priority="medium">
+      <description>Consider Command Pattern for encapsulating requests as objects, useful in message-driven architectures.</description>
+    </requirement>
+    <requirement priority="high">
+      <description>Leverage Spring template classes (JdbcTemplate, RestTemplate) for Template Method patterns.</description>
+    </requirement>
+    <requirement priority="medium">
+      <description>Implement Chain of Responsibility for passing requests along a chain of handlers, common in filters.</description>
+    </requirement>
+  </requirements>
+</rule>

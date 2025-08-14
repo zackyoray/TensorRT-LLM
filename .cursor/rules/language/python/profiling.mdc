@@ -1,0 +1,126 @@
+---
+alwaysApply: false
+description: Python performance profiling rules for identifying bottlenecks and optimizing
+  code performance.
+globs:
+- '*.py'
+---
+
+- Use cProfile and profile modules for comprehensive performance analysis.
+- Implement line-by-line profiling with line_profiler for detailed insights.
+- Use memory profiling tools like memory_profiler to identify memory bottlenecks.
+- Apply timeit module for micro-benchmarking small code snippets.
+- Use py-spy for profiling production applications without code changes.
+- Implement proper benchmarking with statistical significance and multiple runs.
+- Profile both CPU usage and memory consumption for complete analysis.
+- Use flame graphs and visualization tools for performance data interpretation.
+- Set up continuous performance monitoring for regression detection.
+- Apply profiling-guided optimization with focus on actual bottlenecks.
+
+# Profiling Best Practices
+
+
+## Overview
+
+Python performance profiling rules for identifying bottlenecks and optimizing code performance.
+
+
+## Installation and Setup
+
+### Basic Installation
+
+```bash
+pip install profiling
+```
+
+### Import and Basic Usage
+
+```python
+import profiling
+
+# Initialize
+client = profiling.Client()
+
+# Basic operation
+result = client.process(data)
+print(result)
+```
+
+## Code Examples
+
+### Example 1: Basic Usage
+
+```python
+# Profiling basic example
+from profiling import main_function
+
+# Process data
+data = ["item1", "item2", "item3"]
+results = main_function(data)
+
+for result in results:
+    print(f"Processed: {result}")
+```
+
+### Example 2: Advanced Features
+
+```python
+# Advanced configuration
+config = {
+    'timeout': 30,
+    'retry_count': 3,
+    'verbose': True
+}
+
+# Create configured instance
+instance = profiling.create(**config)
+
+# Use advanced features
+with instance.context() as ctx:
+    output = ctx.advanced_operation(
+        input_data=data,
+        options={'parallel': True}
+    )
+```
+
+## Advanced Topics
+
+### Performance Optimization
+
+When working with Profiling, consider these optimization strategies:
+- Cache frequently accessed data
+- Use batch operations where possible
+- Implement connection pooling
+- Monitor resource usage
+- Profile code to identify bottlenecks
+
+### Troubleshooting Guide
+
+Common issues and solutions:
+
+1. **Issue**: Configuration not loading
+   **Solution**: Check file paths and permissions
+
+2. **Issue**: Performance degradation
+   **Solution**: Review logs and increase resource limits
+
+3. **Issue**: Integration failures
+   **Solution**: Verify API versions and compatibility
+
+### Additional Resources
+
+- [Official Documentation](#)
+- [Community Forum](#)
+- [GitHub Repository](#)
+- [Tutorial Videos](#)
+- [Best Practices Guide](#)
+
+### Contributing
+
+Contributions are welcome! Please:
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Submit a pull request
+
+For more details, see CONTRIBUTING.md

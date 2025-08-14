@@ -1,0 +1,103 @@
+---
+alwaysApply: false
+description: LlamaIndex framework rules for building Retrieval-Augmented Generation
+  applications.
+globs:
+- '*.py'
+---
+
+- Use LlamaIndex for building sophisticated RAG applications with document indexing and retrieval.
+- Implement proper document loading and preprocessing with appropriate text splitters.
+- Configure vector stores and embedding models for optimal semantic search performance.
+- Use appropriate index types (VectorStoreIndex, TreeIndex, ListIndex) based on use case requirements.
+- Implement query engines with proper retrieval and response synthesis strategies.
+- Use prompt templates and response synthesizers for consistent and relevant outputs.
+- Configure metadata filtering and semantic search for enhanced retrieval precision.
+- Implement proper evaluation metrics for RAG system performance assessment.
+- Use LlamaIndex's agent framework for complex multi-step reasoning and tool use.
+- Monitor retrieval quality and implement optimization strategies for production systems.
+description:
+globs:
+alwaysApply: false
+---
+
+# Llamaindex Best Practices
+
+
+## Overview
+
+LlamaIndex framework rules for building Retrieval-Augmented Generation applications.
+
+
+## Getting Started with Llamaindex
+
+### Quick Setup
+
+```bash
+# Install Llamaindex
+npm install llamaindex
+
+# Create new project
+npx create-llamaindex-app my-app
+cd my-app
+
+# Start development
+npm run dev
+```
+
+### Basic Component
+
+```javascript
+// components/Example.js
+import { Component } from 'llamaindex';
+
+export default function Example() {
+    return (
+        <Component>
+            <h1>Hello Llamaindex!</h1>
+        </Component>
+    );
+}
+```
+
+## Advanced Topics
+
+### Performance Optimization
+
+When working with Llamaindex, consider these optimization strategies:
+- Cache frequently accessed data
+- Use batch operations where possible
+- Implement connection pooling
+- Monitor resource usage
+- Profile code to identify bottlenecks
+
+### Troubleshooting Guide
+
+Common issues and solutions:
+
+1. **Issue**: Configuration not loading
+   **Solution**: Check file paths and permissions
+
+2. **Issue**: Performance degradation
+   **Solution**: Review logs and increase resource limits
+
+3. **Issue**: Integration failures
+   **Solution**: Verify API versions and compatibility
+
+### Additional Resources
+
+- [Official Documentation](#)
+- [Community Forum](#)
+- [GitHub Repository](#)
+- [Tutorial Videos](#)
+- [Best Practices Guide](#)
+
+### Contributing
+
+Contributions are welcome! Please:
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Submit a pull request
+
+For more details, see CONTRIBUTING.md

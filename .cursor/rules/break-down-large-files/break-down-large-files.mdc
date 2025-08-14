@@ -1,0 +1,98 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+
+# Breaking down a large file into smaller files
+
+## Core Principles
+- Preserve ALL functionality exactly as is
+- Maintain identical behavior after splitting
+- Keep the original file as the main entry point
+- Split files should be focused and cohesive
+
+## Plan
+- Analyze the file structure and identify logical groupings
+- Map out dependencies between functions and variables
+- Create a list of potential split files with their responsibilities
+- Identify shared utilities and common functionality
+- Plan the new directory structure
+- Document the proposed changes
+- Review the plan for potential circular dependencies
+- Get approval for the proposed structure before making changes
+
+## File Organization Rules
+- Target size for split files: < 500 lines
+- Group related functions and variables together
+- Keep dependencies between split files minimal
+- Place split files in appropriate subdirectories
+- Use clear, descriptive file names
+
+## Code Preservation Rules
+- DO NOT modify any function implementations
+- DO NOT change variable names or types
+- DO NOT alter spacing or comments
+- DO NOT modify error handling
+- DO NOT change export interfaces
+
+## Import/Export Rules
+- Original file must maintain ALL original exports
+- Split files should export only what's needed
+- Use named exports for clarity
+- Import dependencies at the top of files
+- Avoid circular dependencies
+
+## Function Organization
+- Group related functions together
+- Keep helper functions close to their primary functions
+- Maintain the original function order where possible
+- Split files should have a clear single responsibility
+
+## Linting Requirements
+- All linting must pass after splitting
+- No behavioral changes allowed
+- Performance should remain identical
+- Error cases must work the same way
+
+## Documentation
+- Preserve all existing comments
+- Add file-level documentation for split files
+- Document dependencies between files
+- Keep function documentation intact
+
+## Example Structure
+Original file: `largeFile.js`
+Split into:
+- `largeFile.js` (main entry, reduced size)
+- `largeFile-lib/helperFunctions.js`
+
+## Recursion
+- Check the output of smaller files to make sure that they follow the same rules
+- If smaller files are too large then they should be broken down again
+- Do not create a new subdirectory for these files
+- Continue recursion until all files match the desired format
+
+## Plan
+- Analyze the file structure and identify logical groupings
+- Map out dependencies between functions and variables
+- Create a list of potential split files with their responsibilities
+- Identify shared utilities and common functionality
+- Plan the new directory structure
+- Document the proposed changes
+- Review the plan for potential circular dependencies
+- Get approval for the proposed structure before making changes
+
+## Validation Checklist
+- [ ] All original exports preserved
+- [ ] No function implementations changed
+- [ ] All linting passing
+- [ ] No new bugs introduced
+- [ ] Clear file organization
+- [ ] Minimal dependencies between files
+- [ ] Documentation maintained
+- [ ] Performance unchanged
+- [ ] All files less than 500 lines
+- [ ] Original file has all varibles and functions that were moved removed from that file
+- [ ] No two files have the same function repeated
+

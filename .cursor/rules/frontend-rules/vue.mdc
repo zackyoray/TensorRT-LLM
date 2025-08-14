@@ -1,0 +1,88 @@
+---
+alwaysApply: false
+description: Vue.js framework rules for building reactive user interfaces with component-based
+  architecture.
+globs:
+- '*.vue,*.js,*.ts'
+---
+
+- Use Vue.js for building reactive and component-based user interfaces.
+- Follow Vue 3 Composition API patterns for better code organization and reusability.
+- Implement proper component composition with props, emits, and slots.
+- Use Vue Router for client-side routing in single-page applications.
+- Manage state with Pinia for predictable and maintainable state management.
+- Implement proper reactivity with ref, reactive, and computed properties.
+- Use Vue's built-in directives effectively (v-if, v-for, v-model, v-bind).
+- Create reusable components with clear prop interfaces and event handling.
+- Implement proper lifecycle management with composition API lifecycle hooks.
+- Use TypeScript with Vue for better type safety and developer experience.
+
+# Vue Best Practices
+
+
+## Overview
+
+Vue.js framework rules for building reactive user interfaces with component-based architecture.
+
+
+## Core Concepts
+
+### Key Features
+- Feature 1: Description of what this feature does
+- Feature 2: How this improves workflow
+- Feature 3: Integration capabilities
+- Feature 4: Performance benefits
+
+### Common Use Cases
+1. **Use Case 1**: When you need to accomplish X
+2. **Use Case 2**: For scenarios requiring Y
+3. **Use Case 3**: To optimize Z processes
+
+### Best Practices
+- Always follow the principle of least privilege
+- Keep configurations version controlled
+- Monitor performance metrics
+- Implement proper error handling
+- Use consistent naming conventions
+
+## Advanced Topics
+
+### Performance Optimization
+
+When working with Vue, consider these optimization strategies:
+- Cache frequently accessed data
+- Use batch operations where possible
+- Implement connection pooling
+- Monitor resource usage
+- Profile code to identify bottlenecks
+
+### Troubleshooting Guide
+
+Common issues and solutions:
+
+1. **Issue**: Configuration not loading
+   **Solution**: Check file paths and permissions
+
+2. **Issue**: Performance degradation
+   **Solution**: Review logs and increase resource limits
+
+3. **Issue**: Integration failures
+   **Solution**: Verify API versions and compatibility
+
+### Additional Resources
+
+- [Official Documentation](#)
+- [Community Forum](#)
+- [GitHub Repository](#)
+- [Tutorial Videos](#)
+- [Best Practices Guide](#)
+
+### Contributing
+
+Contributions are welcome! Please:
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Submit a pull request
+
+For more details, see CONTRIBUTING.md

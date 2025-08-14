@@ -1,0 +1,99 @@
+---
+alwaysApply: false
+description: Angular framework rules for building scalable web applications with TypeScript
+  and component architecture.
+globs:
+- '*.ts,*.html,*.scss'
+---
+
+- Use Angular for building large-scale, enterprise web applications with TypeScript.
+- Follow Angular's component-based architecture with proper module organization.
+- Implement dependency injection for loose coupling and testability.
+- Use Angular CLI for project generation, building, and deployment.
+- Follow reactive programming patterns with RxJS observables.
+- Implement proper routing with Angular Router and guards.
+- Use Angular Forms (reactive or template-driven) for user input handling.
+- Manage state with NgRx for complex applications requiring centralized state.
+- Implement proper HTTP communication with Angular HttpClient and interceptors.
+- Follow Angular Style Guide and coding conventions for consistency.
+
+# Angular Best Practices
+
+
+## Overview
+
+Angular framework rules for building scalable web applications with TypeScript and component architecture.
+
+
+## Getting Started with Angular
+
+### Quick Setup
+
+```bash
+# Install Angular
+npm install angular
+
+# Create new project
+npx create-angular-app my-app
+cd my-app
+
+# Start development
+npm run dev
+```
+
+### Basic Component
+
+```javascript
+// components/Example.js
+import { Component } from 'angular';
+
+export default function Example() {
+    return (
+        <Component>
+            <h1>Hello Angular!</h1>
+        </Component>
+    );
+}
+```
+
+## Advanced Topics
+
+### Performance Optimization
+
+When working with Angular, consider these optimization strategies:
+- Cache frequently accessed data
+- Use batch operations where possible
+- Implement connection pooling
+- Monitor resource usage
+- Profile code to identify bottlenecks
+
+### Troubleshooting Guide
+
+Common issues and solutions:
+
+1. **Issue**: Configuration not loading
+   **Solution**: Check file paths and permissions
+
+2. **Issue**: Performance degradation
+   **Solution**: Review logs and increase resource limits
+
+3. **Issue**: Integration failures
+   **Solution**: Verify API versions and compatibility
+
+### Additional Resources
+
+- [Official Documentation](#)
+- [Community Forum](#)
+- [GitHub Repository](#)
+- [Tutorial Videos](#)
+- [Best Practices Guide](#)
+
+### Contributing
+
+Contributions are welcome! Please:
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Submit a pull request
+
+For more details, see CONTRIBUTING.md

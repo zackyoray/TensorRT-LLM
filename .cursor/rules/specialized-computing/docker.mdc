@@ -1,0 +1,88 @@
+---
+alwaysApply: false
+description: Docker containerization rules for building, deploying, and managing containerized
+  applications.
+globs:
+- Dockerfile,*.dockerfile,docker-compose.yml,docker-compose.yaml
+---
+
+- Use Docker for consistent application packaging and deployment across environments.
+- Create efficient Dockerfiles with multi-stage builds and optimized layer caching.
+- Implement proper base image selection and security scanning for container images.
+- Use appropriate .dockerignore files to exclude unnecessary files from build context.
+- Follow Docker best practices for container security and minimal attack surface.
+- Use Docker Compose for multi-container application orchestration and development.
+- Implement proper health checks and graceful shutdown handling in containers.
+- Use environment variables for configuration management in containerized applications.
+- Apply proper resource limits and monitoring for production container deployments.
+- Implement container image versioning and registry management strategies.
+
+# Docker Best Practices
+
+
+## Overview
+
+Docker containerization rules for building, deploying, and managing containerized applications.
+
+
+## Core Concepts
+
+### Key Features
+- Feature 1: Description of what this feature does
+- Feature 2: How this improves workflow
+- Feature 3: Integration capabilities
+- Feature 4: Performance benefits
+
+### Common Use Cases
+1. **Use Case 1**: When you need to accomplish X
+2. **Use Case 2**: For scenarios requiring Y
+3. **Use Case 3**: To optimize Z processes
+
+### Best Practices
+- Always follow the principle of least privilege
+- Keep configurations version controlled
+- Monitor performance metrics
+- Implement proper error handling
+- Use consistent naming conventions
+
+## Advanced Topics
+
+### Performance Optimization
+
+When working with Docker, consider these optimization strategies:
+- Cache frequently accessed data
+- Use batch operations where possible
+- Implement connection pooling
+- Monitor resource usage
+- Profile code to identify bottlenecks
+
+### Troubleshooting Guide
+
+Common issues and solutions:
+
+1. **Issue**: Configuration not loading
+   **Solution**: Check file paths and permissions
+
+2. **Issue**: Performance degradation
+   **Solution**: Review logs and increase resource limits
+
+3. **Issue**: Integration failures
+   **Solution**: Verify API versions and compatibility
+
+### Additional Resources
+
+- [Official Documentation](#)
+- [Community Forum](#)
+- [GitHub Repository](#)
+- [Tutorial Videos](#)
+- [Best Practices Guide](#)
+
+### Contributing
+
+Contributions are welcome! Please:
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Submit a pull request
+
+For more details, see CONTRIBUTING.md

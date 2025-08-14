@@ -1,0 +1,43 @@
+---
+description: "Java naming conventions for packages, classes, methods, and variables. Consistent with Java coding standards and SonarQube requirements."
+globs: ["src/main/java/**/*.java", "src/test/java/**/*.java"]
+alwaysApply: false
+---
+
+# Java Naming Conventions
+
+- **Packages:** All lowercase, separated by dots (e.g., `com.yourorg.app.service`).
+- **Classes/Interfaces/Enums:** `PascalCase` (e.g., `UserService`, `UserRepository`, `PaymentStatus`).
+- **Methods:** `camelCase` (e.g., `getUserById`, `saveUser`, `calculateTotalAmount`).
+- **Variables:** `camelCase` (e.g., `userName`, `orderTotal`, `httpStatusCode`).
+- **Constants:** `SCREAMING_SNAKE_CASE` (e.g., `MAX_RETRIES`, `DEFAULT_PAGE_SIZE`).
+- **Test Methods:** Should clearly indicate the scenario and expected outcome (e.g., `shouldReturnUser_whenUserExists`, `shouldThrowException_whenInvalidInput`).
+- **Consistency:** Ensure consistent naming throughout the codebase. (SonarQube: Enforces naming conventions and flags inconsistencies).
+
+<rule>
+  <name>java_naming_conventions</name>
+  <description>Java naming conventions for packages, classes, methods, and variables.</description>
+  <requirements>
+    <requirement priority="high">
+      <description>Packages must be all lowercase, separated by dots (e.g., com.yourorg.app.service).</description>
+    </requirement>
+    <requirement priority="high">
+      <description>Classes, Interfaces, and Enums must use PascalCase (e.g., UserService, UserRepository, PaymentStatus).</description>
+    </requirement>
+    <requirement priority="high">
+      <description>Methods must use camelCase (e.g., getUserById, saveUser, calculateTotalAmount).</description>
+    </requirement>
+    <requirement priority="high">
+      <description>Variables must use camelCase (e.g., userName, orderTotal, httpStatusCode).</description>
+    </requirement>
+    <requirement priority="high">
+      <description>Constants must use SCREAMING_SNAKE_CASE (e.g., MAX_RETRIES, DEFAULT_PAGE_SIZE).</description>
+    </requirement>
+    <requirement priority="medium">
+      <description>Test methods should clearly indicate the scenario and expected outcome (e.g., shouldReturnUser_whenUserExists).</description>
+    </requirement>
+    <requirement priority="critical">
+      <description>Ensure consistent naming throughout the codebase.</description>
+    </requirement>
+  </requirements>
+</rule>

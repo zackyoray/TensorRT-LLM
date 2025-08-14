@@ -1,0 +1,258 @@
+---
+description: Project Structure best practices and guidelines
+globs:
+- '*.rst'
+- '*.md'
+- conf.py
+- Makefile
+- '**/docs/**'
+alwaysApply: false
+---
+
+# README Documentation - Project Structure
+
+This rule provides guidelines for creating effective README.md files and maintaining project documentation structure that serves both human users and automated systems.
+
+## 1. File Naming Conventions and Navigation
+
+### 1.1. Core Documentation Files
+
+- **README.md**: Project overview, quick start, essential information (optimized for first impression)
+- **CONTEXT.md**: Detailed background, business context, system rationale (comprehensive AI context)
+- **API.md**: API documentation with structured endpoints and examples
+- **ARCHITECTURE.md**: System design, component relationships, technical decisions
+- **DEPLOYMENT.md**: Infrastructure setup, deployment procedures, operational guides
+- **TROUBLESHOOTING.md**: Problem-solution pairs, debugging workflows, incident procedures
+- **docs/**: Directory for comprehensive documentation collections
+
+### 1.2. README.md Navigation Structure
+
+Always include a **Documentation** section in README.md that links to available documentation files:
+
+```markdown
+# Project Name
+
+## Overview
+[Brief project description optimized for context building]
+
+## Quick Start
+[Essential setup steps with validation checkpoints]
+
+## Documentation
+
+### Core Documentation
+- 📋 [Project Context](CONTEXT.md) - Detailed background and system rationale
+- 🏗️ [Architecture](ARCHITECTURE.md) - System design and component relationships
+- 🚀 [Deployment](DEPLOYMENT.md) - Infrastructure setup and operational procedures
+- 🔧 [API Reference](API.md) - Endpoints, parameters, and examples
+- 🔍 [Troubleshooting](TROUBLESHOOTING.md) - Common issues and solutions
+
+### Extended Documentation
+- 📚 [User Guide](docs/user-guide.md) - End-user instructions and workflows
+- 👩‍💻 [Developer Guide](docs/developer-guide.md) - Development setup and contribution guidelines
+- 🔐 [Security Guide](docs/security.md) - Security considerations and best practices
+
+## Contributing
+[Contribution guidelines with clear next steps]
+```
+
+### 1.3. Navigation Examples by Project Type
+
+**API/Service Project:**
+```markdown
+## Documentation
+### Core Documentation
+- 📋 [Project Context](CONTEXT.md) - Business requirements and technical decisions
+- 🏗️ [Architecture](ARCHITECTURE.md) - Service design and data flow
+- 🔧 [API Reference](API.md) - Endpoints, authentication, and examples
+- 🚀 [Deployment](DEPLOYMENT.md) - Container deployment and scaling
+- 🔍 [Troubleshooting](TROUBLESHOOTING.md) - Common issues and monitoring
+```
+
+**Library/Package Project:**
+```markdown
+## Documentation
+### Core Documentation
+- 📋 [Project Context](CONTEXT.md) - Library purpose and design philosophy
+- 🏗️ [Architecture](ARCHITECTURE.md) - Module structure and dependencies
+- 📚 [User Guide](docs/user-guide.md) - Installation and basic usage
+- 👩‍💻 [Developer Guide](docs/developer-guide.md) - Contributing and extending
+```
+
+**Infrastructure/Platform Project:**
+```markdown
+## Documentation
+### Core Documentation
+- 📋 [Project Context](CONTEXT.md) - Platform requirements and scope
+- 🏗️ [Architecture](ARCHITECTURE.md) - Infrastructure components and networking
+- 🚀 [Deployment](DEPLOYMENT.md) - Environment setup and configuration
+- 🔧 [Operations Guide](docs/operations.md) - Monitoring and maintenance
+- 🔍 [Troubleshooting](TROUBLESHOOTING.md) - Incident response procedures
+```
+
+## 2. Module-Level Documentation Strategy
+
+### 2.1. Automatic Module README Creation
+
+**Always create README.md when:**
+- New directory is created that contains code modules
+- New package/service is added to the project structure
+- New utility collection or shared library is created
+- New feature module with multiple files is implemented
+- New integration component with specific configuration is added
+
+### 2.2. Module README Templates
+
+**Code Module Template:**
+```markdown
+# Module Name
+
+## Purpose
+Brief description of what this module does and why it exists.
+
+## Key Components
+- `file1.py` - Main functionality description
+- `file2.py` - Supporting functionality description
+- `config/` - Configuration files and settings
+
+## Usage
+```python
+from module_name import main_function
+result = main_function(parameters)
+```
+
+## Dependencies
+- List of module-specific dependencies
+- Version requirements if critical
+
+## Configuration
+Environment variables or config files needed by this module.
+
+## Testing
+```bash
+# How to run tests for this module specifically
+pytest tests/module_name/
+```
+
+## See Also
+- [Main Project](../../README.md) - Overall project documentation
+- [Related Module](../other_module/README.md) - If applicable
+```
+
+**Service/API Module Template:**
+```markdown
+# Service Name
+
+## Overview
+What this service provides and its role in the overall system.
+
+## Endpoints
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | `/health` | Service health check |
+| POST | `/api/action` | Primary service function |
+
+## Configuration
+Required environment variables and configuration files.
+
+## Local Development
+```bash
+# How to run this service locally
+cd services/service_name
+./start-dev.sh
+```
+
+## Deployment
+Service-specific deployment notes (if different from main project).
+
+## Monitoring
+- Health check endpoints
+- Key metrics this service exposes
+- Logs location and format
+
+## Integration
+How this service connects to other parts of the system.
+```
+
+### 2.3. Cross-Reference Patterns
+
+**Main Project README Module References:**
+```markdown
+## Project Structure
+```
+project-name/
+├── services/
+│   ├── api-service/          # [API Service](services/api-service/README.md)
+│   └── worker-service/       # [Worker Service](services/worker-service/README.md)
+├── libs/
+│   ├── common-utils/         # [Common Utilities](libs/common-utils/README.md)
+│   └── data-processing/      # [Data Processing](libs/data-processing/README.md)
+└── infrastructure/           # [Infrastructure](infrastructure/README.md)
+```
+
+**Module README Cross-References:**
+- Always link back to main project: `[Main Project](../../README.md)`
+- Link to related modules: `[Related Module](../other-module/README.md)`
+- Link to parent module if nested: `[Parent Module](../README.md)`
+
+## 3. Documentation Maintenance
+
+### 3.1. README Update Triggers
+
+**Module README Updates** (subdirectory level):
+- Module-specific changes: Function additions, API modifications within the module
+- Implementation details: How the specific module works internally
+- Module dependencies: Libraries or other modules this one depends on
+- Configuration changes: Module-specific settings or environment variables
+- Module testing: How to test this specific module
+- Bug fixes: Issues resolved within this module
+
+**Project README Updates** (main level - only for major changes):
+- New modules added: New directories/services that affect overall architecture
+- Architectural changes: Changes to how modules interact or overall system design
+- Cross-module breaking changes: Changes that affect multiple modules or external interfaces
+- Deployment architecture: Changes to how the entire system is deployed
+- Major integrations: New external services or significant dependency changes
+- Project scope evolution: Fundamental changes to what the project does
+
+### 3.2. Update Procedures
+
+**Navigation Link Maintenance:**
+- ✅ Verify each link works and points to current content
+- ✅ Update descriptions to reflect current file contents
+- ✅ Add new documentation files with appropriate emojis and descriptions
+- ✅ Remove links to deprecated or deleted documentation
+- ✅ Ensure emoji consistency across all navigation sections
+
+**Content Synchronization:**
+- **Project Overview**: Ensure overview section reflects current capabilities and scope
+- **Quick Start**: Validate that setup steps work with current codebase version
+- **Prerequisites**: Update version requirements, dependencies, and system requirements
+- **Contributing**: Keep contribution guidelines current with development practices
+
+### 3.3. Change Impact Assessment
+
+**Module-Specific Change Assessment:**
+1. **Determine Scope**: Is this a module-only change or does it affect project architecture?
+2. **Update Appropriate Level**: Module README for internal changes, main README for architectural impact
+3. **Maintain Cross-References**: Ensure module links in main project structure remain accurate
+4. **Test Module Independence**: Verify module README stands alone while linking appropriately
+
+## Best Practices Summary
+
+### Essential Principles
+
+1. **Navigation Over Duplication**: Documentation should guide to details rather than duplicate content.
+2. **Proximity Over Centralization**: Keep module documentation close to the code it describes.
+3. **Scope Awareness**: Update module README for module changes, main README for architectural changes.
+4. **Currency Over Completeness**: Keep documentation current rather than comprehensive but outdated.
+
+### Quality Indicators
+
+- **Current Navigation**: All README.md links work and point to current, relevant content.
+- **Synchronized Content**: Documentation accurately reflects current project/module state and capabilities.
+- **Module Coverage**: All significant code directories have appropriate README.md documentation.
+- **Appropriate Scope**: Module READMEs focus on module details, main README focuses on architecture.
+- **Effective Cross-References**: Clear navigation between main project and module documentation.
+
+By following these guidelines, your README documentation will provide clear navigation, maintain currency, and effectively guide users to the information they need.

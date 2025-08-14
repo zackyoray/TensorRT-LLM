@@ -1,0 +1,103 @@
+---
+alwaysApply: false
+description: AutoGen multi-agent framework rules for building collaborative AI agent
+  systems.
+globs:
+- '*.py'
+---
+
+- Use AutoGen for building multi-agent conversational AI systems with role-based collaboration.
+- Design agent personas with clear roles, capabilities, and interaction patterns.
+- Implement proper conversation flow management with termination conditions.
+- Use appropriate agent types (UserProxyAgent, AssistantAgent, GroupChatManager) for different scenarios.
+- Configure code execution environments securely for agents that generate and run code.
+- Implement proper message filtering and content moderation for agent interactions.
+- Use group chat patterns for complex multi-agent collaborations and decision-making.
+- Handle agent failures and implement fallback mechanisms for robust conversations.
+- Monitor agent interactions and implement logging for debugging and analysis.
+- Optimize agent configurations for cost-effective and efficient multi-agent workflows.
+   - **CI/CD Integration:**
+     - Use a CI/CD pipeline to automate the build, test, and deployment process.
+     - Integrate the CI/CD pipeline with the version control system.
+     - Use automated testing to ensure code quality.
+
+# Autogen Best Practices
+
+
+## Overview
+
+AutoGen multi-agent framework rules for building collaborative AI agent systems.
+
+
+## Getting Started with Autogen
+
+### Quick Setup
+
+```bash
+# Install Autogen
+npm install autogen
+
+# Create new project
+npx create-autogen-app my-app
+cd my-app
+
+# Start development
+npm run dev
+```
+
+### Basic Component
+
+```javascript
+// components/Example.js
+import { Component } from 'autogen';
+
+export default function Example() {
+    return (
+        <Component>
+            <h1>Hello Autogen!</h1>
+        </Component>
+    );
+}
+```
+
+## Advanced Topics
+
+### Performance Optimization
+
+When working with Autogen, consider these optimization strategies:
+- Cache frequently accessed data
+- Use batch operations where possible
+- Implement connection pooling
+- Monitor resource usage
+- Profile code to identify bottlenecks
+
+### Troubleshooting Guide
+
+Common issues and solutions:
+
+1. **Issue**: Configuration not loading
+   **Solution**: Check file paths and permissions
+
+2. **Issue**: Performance degradation
+   **Solution**: Review logs and increase resource limits
+
+3. **Issue**: Integration failures
+   **Solution**: Verify API versions and compatibility
+
+### Additional Resources
+
+- [Official Documentation](#)
+- [Community Forum](#)
+- [GitHub Repository](#)
+- [Tutorial Videos](#)
+- [Best Practices Guide](#)
+
+### Contributing
+
+Contributions are welcome! Please:
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Submit a pull request
+
+For more details, see CONTRIBUTING.md

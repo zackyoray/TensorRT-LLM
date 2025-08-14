@@ -1,0 +1,44 @@
+---
+description: "Directives for using creational design patterns in Java Spring Boot, considering Spring's idioms and SonarQube's quality goals."
+globs: ["src/main/java/**/*.java"]
+alwaysApply: false
+---
+
+# Java Creational Design Patterns
+
+- **Constructor Functions/Factories (Spring Beans):**
+    - For Spring-managed beans, the default is often sufficient via `@Component`, `@Service`, etc., with constructor injection.
+    - When a bean requires complex setup, external resources, or conditional creation, suggest a `@Bean` method within a `@Configuration` class as a factory.
+- **Builder Pattern:**
+    - **When to use:** For constructing complex objects (especially DTOs, domain models, or configuration objects) with many optional parameters, leading to more readable and robust code.
+    - **Implementation:** Suggest static inner `Builder` classes or using Lombok's `@Builder` annotation. (SonarQube: Encourages readable object construction).
+- **Factory Pattern:**
+    - **When to use:** When needing to create different types of objects that share a common interface based on some input (e.g., `PaymentGatewayFactory` returning different `PaymentGateway` implementations).
+    - **Implementation:** Suggest a factory method or a factory class. Spring's DI can then inject the correct factory.
+- **Singleton:**
+    - **Spring Context:** Most Spring beans are singletons by default and managed by the container. AI should leverage Spring's component model for singleton behavior.
+    - **Avoid Manual Singletons:** Discourage implementing the manual Singleton pattern in application code due to potential concurrency issues and reduced testability. If a globally unique instance is truly needed, ensure it's thread-safe and lazily initialized, but prefer Spring's `@Component` or `@Service`. (SonarQube: Warns against common Singleton implementation flaws).
+- **Prototype:**
+    - **Spring Scope:** When a new instance of a bean is required every time it's injected, use Spring's `@Scope("prototype")`.
+
+<rule>
+  <name>java_creational_design_patterns</name>
+  <description>Directives for using creational design patterns in Java Spring Boot.</description>
+  <requirements>
+    <requirement priority="high">
+      <description>For complex bean setup, suggest a @Bean method within a @Configuration class as a factory.</description>
+    </requirement>
+    <requirement priority="high">
+      <description>Use Builder Pattern (static inner Builder classes or Lombok's @Builder) for constructing complex objects with many optional parameters.</description>
+    </requirement>
+    <requirement priority="high">
+      <description>Implement Factory Pattern when creating different types of objects sharing a common interface based on input.</description>
+    </requirement>
+    <requirement priority="critical">
+      <description>Leverage Spring's component model for Singleton behavior; avoid manual Singleton pattern implementations due to concurrency and testability issues.</description>
+    </requirement>
+    <requirement priority="medium">
+      <description>Use Spring's @Scope("prototype") when a new instance of a bean is required for every injection.</description>
+    </requirement>
+  </requirements>
+</rule>

@@ -1,0 +1,99 @@
+---
+alwaysApply: false
+description: OpenAI API integration rules for building AI-powered applications with
+  GPT models.
+globs:
+- '*.py,*.js,*.ts'
+---
+
+- Use OpenAI API for integrating GPT models into applications with proper authentication.
+- Implement proper error handling for API rate limits, timeouts, and model availability.
+- Use appropriate model selection based on task complexity and cost considerations.
+- Implement token counting and management to optimize API usage and costs.
+- Use system prompts effectively to establish context and behavior guidelines.
+- Implement proper prompt engineering techniques for consistent and reliable outputs.
+- Handle streaming responses appropriately for real-time user experiences.
+- Use function calling capabilities for structured outputs and tool integration.
+- Implement proper content filtering and safety measures for user-generated content.
+- Monitor API usage, costs, and performance metrics for optimization.
+
+# Openai Best Practices
+
+
+## Overview
+
+OpenAI API integration rules for building AI-powered applications with GPT models.
+
+
+## Getting Started with Openai
+
+### Quick Setup
+
+```bash
+# Install Openai
+npm install openai
+
+# Create new project
+npx create-openai-app my-app
+cd my-app
+
+# Start development
+npm run dev
+```
+
+### Basic Component
+
+```javascript
+// components/Example.js
+import { Component } from 'openai';
+
+export default function Example() {
+    return (
+        <Component>
+            <h1>Hello Openai!</h1>
+        </Component>
+    );
+}
+```
+
+## Advanced Topics
+
+### Performance Optimization
+
+When working with Openai, consider these optimization strategies:
+- Cache frequently accessed data
+- Use batch operations where possible
+- Implement connection pooling
+- Monitor resource usage
+- Profile code to identify bottlenecks
+
+### Troubleshooting Guide
+
+Common issues and solutions:
+
+1. **Issue**: Configuration not loading
+   **Solution**: Check file paths and permissions
+
+2. **Issue**: Performance degradation
+   **Solution**: Review logs and increase resource limits
+
+3. **Issue**: Integration failures
+   **Solution**: Verify API versions and compatibility
+
+### Additional Resources
+
+- [Official Documentation](#)
+- [Community Forum](#)
+- [GitHub Repository](#)
+- [Tutorial Videos](#)
+- [Best Practices Guide](#)
+
+### Contributing
+
+Contributions are welcome! Please:
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Submit a pull request
+
+For more details, see CONTRIBUTING.md

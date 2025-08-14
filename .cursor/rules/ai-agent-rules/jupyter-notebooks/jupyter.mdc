@@ -1,0 +1,130 @@
+---
+alwaysApply: false
+description: Jupyter notebooks rules for interactive data science and AI development
+  workflows.
+globs:
+- '*.ipynb,*.py'
+---
+
+- Use Jupyter notebooks for interactive data exploration, prototyping, and AI model development.
+- Structure notebooks with clear sections, markdown documentation, and logical flow.
+- Use meaningful cell outputs and visualizations to communicate findings effectively.
+- Implement proper data loading, preprocessing, and validation in notebook workflows.
+- Use version control best practices with tools like nbstripout for clean Git history.
+- Convert production-ready code from notebooks to proper Python modules and packages.
+- Use appropriate notebook extensions and tools for enhanced productivity and collaboration.
+- Implement proper error handling and debugging techniques in notebook environments.
+- Use notebooks for model experimentation while maintaining reproducible research practices.
+- Share notebooks with clear documentation, requirements, and data dependencies.
+description:
+globs:
+alwaysApply: false
+---
+
+# Jupyter Best Practices
+
+
+## Overview
+
+Jupyter notebooks rules for interactive data science and AI development workflows.
+
+
+## Installation and Setup
+
+### Basic Installation
+
+```bash
+pip install jupyter
+```
+
+### Import and Basic Usage
+
+```python
+import jupyter
+
+# Initialize
+client = jupyter.Client()
+
+# Basic operation
+result = client.process(data)
+print(result)
+```
+
+## Code Examples
+
+### Example 1: Basic Usage
+
+```python
+# Jupyter basic example
+from jupyter import main_function
+
+# Process data
+data = ["item1", "item2", "item3"]
+results = main_function(data)
+
+for result in results:
+    print(f"Processed: {result}")
+```
+
+### Example 2: Advanced Features
+
+```python
+# Advanced configuration
+config = {
+    'timeout': 30,
+    'retry_count': 3,
+    'verbose': True
+}
+
+# Create configured instance
+instance = jupyter.create(**config)
+
+# Use advanced features
+with instance.context() as ctx:
+    output = ctx.advanced_operation(
+        input_data=data,
+        options={'parallel': True}
+    )
+```
+
+## Advanced Topics
+
+### Performance Optimization
+
+When working with Jupyter, consider these optimization strategies:
+- Cache frequently accessed data
+- Use batch operations where possible
+- Implement connection pooling
+- Monitor resource usage
+- Profile code to identify bottlenecks
+
+### Troubleshooting Guide
+
+Common issues and solutions:
+
+1. **Issue**: Configuration not loading
+   **Solution**: Check file paths and permissions
+
+2. **Issue**: Performance degradation
+   **Solution**: Review logs and increase resource limits
+
+3. **Issue**: Integration failures
+   **Solution**: Verify API versions and compatibility
+
+### Additional Resources
+
+- [Official Documentation](#)
+- [Community Forum](#)
+- [GitHub Repository](#)
+- [Tutorial Videos](#)
+- [Best Practices Guide](#)
+
+### Contributing
+
+Contributions are welcome! Please:
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Submit a pull request
+
+For more details, see CONTRIBUTING.md

@@ -1,0 +1,154 @@
+---
+alwaysApply: false
+description: Asyncio programming rules for building high-performance asynchronous
+  applications in Python.
+globs:
+- '*.py'
+---
+
+- Use asyncio for I/O-bound and high-level structured network code.
+- Implement async/await syntax for asynchronous function definitions.
+- Use asyncio.gather() for concurrent execution of multiple coroutines.
+- Handle exceptions properly in async code with try/except blocks.
+- Use async context managers for resource management.
+- Implement proper connection pooling for database and HTTP connections.
+- Use asyncio.Queue for producer-consumer patterns.
+- Avoid blocking operations in async functions.
+- Use asyncio.create_task() for fire-and-forget operations.
+- Test async code with pytest-asyncio or similar testing frameworks.
+
+## Asyncio Programming Best Practices
+
+Asyncio is a library for writing concurrent code using async/await syntax.
+
+### 1. Basic Async Patterns
+- **Async Functions:** Define functions with async def
+- **Await Operations:** Use await for asynchronous operations
+- **Coroutines:** Understand coroutine lifecycle and execution
+- **Event Loop:** Manage event loop properly
+
+### 2. Concurrency Patterns
+- **Gathering:** Use asyncio.gather for concurrent execution
+- **Task Creation:** Create tasks with asyncio.create_task()
+- **Semaphores:** Control concurrency with semaphores
+- **Locks:** Use asyncio locks for shared resource protection
+
+### 3. Error Handling
+- **Exception Handling:** Handle exceptions in async code properly
+- **Task Cancellation:** Implement proper task cancellation
+- **Timeout Handling:** Use asyncio.wait_for for timeout operations
+- **Error Propagation:** Understand error propagation in async code
+
+### 4. Resource Management
+- **Context Managers:** Use async context managers
+- **Connection Pooling:** Implement proper connection pooling
+- **Resource Cleanup:** Ensure proper resource cleanup
+- **Memory Management:** Avoid memory leaks in long-running applications
+
+# Asyncio Best Practices
+
+
+## Overview
+
+Asyncio programming rules for building high-performance asynchronous applications in Python.
+
+
+## Installation and Setup
+
+### Basic Installation
+
+```bash
+pip install asyncio
+```
+
+### Import and Basic Usage
+
+```python
+import asyncio
+
+# Initialize
+client = asyncio.Client()
+
+# Basic operation
+result = client.process(data)
+print(result)
+```
+
+## Code Examples
+
+### Example 1: Basic Usage
+
+```python
+# Asyncio basic example
+from asyncio import main_function
+
+# Process data
+data = ["item1", "item2", "item3"]
+results = main_function(data)
+
+for result in results:
+    print(f"Processed: {result}")
+```
+
+### Example 2: Advanced Features
+
+```python
+# Advanced configuration
+config = {
+    'timeout': 30,
+    'retry_count': 3,
+    'verbose': True
+}
+
+# Create configured instance
+instance = asyncio.create(**config)
+
+# Use advanced features
+with instance.context() as ctx:
+    output = ctx.advanced_operation(
+        input_data=data,
+        options={'parallel': True}
+    )
+```
+
+## Advanced Topics
+
+### Performance Optimization
+
+When working with Asyncio, consider these optimization strategies:
+- Cache frequently accessed data
+- Use batch operations where possible
+- Implement connection pooling
+- Monitor resource usage
+- Profile code to identify bottlenecks
+
+### Troubleshooting Guide
+
+Common issues and solutions:
+
+1. **Issue**: Configuration not loading
+   **Solution**: Check file paths and permissions
+
+2. **Issue**: Performance degradation
+   **Solution**: Review logs and increase resource limits
+
+3. **Issue**: Integration failures
+   **Solution**: Verify API versions and compatibility
+
+### Additional Resources
+
+- [Official Documentation](#)
+- [Community Forum](#)
+- [GitHub Repository](#)
+- [Tutorial Videos](#)
+- [Best Practices Guide](#)
+
+### Contributing
+
+Contributions are welcome! Please:
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Submit a pull request
+
+For more details, see CONTRIBUTING.md

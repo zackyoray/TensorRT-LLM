@@ -1,0 +1,92 @@
+---
+alwaysApply: false
+description: React Native rules for building cross-platform mobile applications with
+  native performance.
+globs:
+- '*.js,*.jsx,*.ts,*.tsx'
+---
+
+- Use React Native for cross-platform mobile development with shared codebase.
+- Follow React Native component patterns and navigation best practices.
+- Implement platform-specific code when necessary using Platform API.
+- Use React Navigation for consistent navigation patterns across platforms.
+- Manage device capabilities with appropriate native modules and APIs.
+- Implement proper state management suitable for mobile applications.
+- Use StyleSheet API for efficient and scalable styling.
+- Handle async operations and loading states appropriately for mobile UX.
+- Implement proper error boundaries and error handling for mobile apps.
+- Optimize performance with proper list rendering, image handling, and memory management.
+
+- **CI/CD Integration:**
+    - Integrate your code repository with a CI/CD service like GitHub Actions or CircleCI.
+    - Configure the CI/CD pipeline to run tests and build the application on every commit.
+
+# React Native Best Practices
+
+
+## Overview
+
+React Native rules for building cross-platform mobile applications with native performance.
+
+
+## Core Concepts
+
+### Key Features
+- Feature 1: Description of what this feature does
+- Feature 2: How this improves workflow
+- Feature 3: Integration capabilities
+- Feature 4: Performance benefits
+
+### Common Use Cases
+1. **Use Case 1**: When you need to accomplish X
+2. **Use Case 2**: For scenarios requiring Y
+3. **Use Case 3**: To optimize Z processes
+
+### Best Practices
+- Always follow the principle of least privilege
+- Keep configurations version controlled
+- Monitor performance metrics
+- Implement proper error handling
+- Use consistent naming conventions
+
+## Advanced Topics
+
+### Performance Optimization
+
+When working with React Native, consider these optimization strategies:
+- Cache frequently accessed data
+- Use batch operations where possible
+- Implement connection pooling
+- Monitor resource usage
+- Profile code to identify bottlenecks
+
+### Troubleshooting Guide
+
+Common issues and solutions:
+
+1. **Issue**: Configuration not loading
+   **Solution**: Check file paths and permissions
+
+2. **Issue**: Performance degradation
+   **Solution**: Review logs and increase resource limits
+
+3. **Issue**: Integration failures
+   **Solution**: Verify API versions and compatibility
+
+### Additional Resources
+
+- [Official Documentation](#)
+- [Community Forum](#)
+- [GitHub Repository](#)
+- [Tutorial Videos](#)
+- [Best Practices Guide](#)
+
+### Contributing
+
+Contributions are welcome! Please:
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Submit a pull request
+
+For more details, see CONTRIBUTING.md

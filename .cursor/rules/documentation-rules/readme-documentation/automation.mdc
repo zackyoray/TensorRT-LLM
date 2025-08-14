@@ -1,0 +1,338 @@
+---
+description: Automation best practices and guidelines
+globs:
+- '*.rst'
+- '*.md'
+- conf.py
+- Makefile
+- '**/docs/**'
+alwaysApply: false
+---
+
+# README Documentation - Automation
+
+This rule provides automation tools and workflows for maintaining README documentation consistency and currency.
+
+## 1. Module Documentation Automation
+
+### 1.1. Git Hooks for Module Documentation
+
+**Pre-commit Hook for Module README Management:**
+```bash
+#!/bin/bash
+# pre-commit hook for module README management
+
+# Check for new directories and ensure they have README.md
+find . -type d -not -path "./.git*" -not -path "./node_modules*" | while read dir; do
+    if [[ $(find "$dir" -maxdepth 1 -name "*.py" -o -name "*.js" -o -name "*.ts" | wc -l) -gt 2 ]]; then
+        if [[ ! -f "$dir/README.md" ]]; then
+            echo "📋 New module directory without README.md: $dir"
+            echo "📋 Consider creating module documentation"
+        fi
+    fi
+done
+
+# Check if code files changed and prompt module README review
+git diff --cached --name-only | grep -E "\.(py|js|ts|go|rs)$" | while read file; do
+    module_dir=$(dirname "$file")
+    if [[ -f "$module_dir/README.md" ]]; then
+        echo "📋 Code changed in $module_dir - consider updating module README.md"
+    fi
+done
+```
+
+### 1.2. Module README Generation Templates
+
+**Template Generation Script:**
+```bash
+#!/bin/bash
+# Script to generate module README based on detected module type
+
+generate_module_readme() {
+    local module_path=$1
+    local module_type=$2  # service, library, utility
+    
+    case $module_type in
+        "service")
+            cp templates/service-README.md "$module_path/README.md"
+            ;;
+        "library")
+            cp templates/library-README.md "$module_path/README.md"
+            ;;
+        "utility")
+            cp templates/utility-README.md "$module_path/README.md"
+            ;;
+    esac
+    
+    # Replace template variables with actual module name
+    sed -i "s/{{MODULE_NAME}}/$(basename $module_path)/g" "$module_path/README.md"
+    sed -i "s/{{MODULE_PATH}}/$(realpath --relative-to=. $module_path)/g" "$module_path/README.md"
+}
+
+# Auto-detect module type based on contents
+detect_module_type() {
+    local module_path=$1
+    
+    if [[ -f "$module_path/requirements.txt" || -f "$module_path/setup.py" || -f "$module_path/__init__.py" ]]; then
+        echo "library"
+    elif [[ -f "$module_path/Dockerfile" || -f "$module_path/docker-compose.yml" ]]; then
+        echo "service"
+    elif [[ $(find "$module_path" -name "*.py" -o -name "*.js" -o -name "*.ts" | wc -l) -gt 0 ]]; then
+        echo "utility"
+    else
+        echo "library"  # default
+    fi
+}
+```
+
+## 2. Link Validation and Maintenance
+
+### 2.1. Automated Link Checking
+
+**CI/CD Pipeline for Hierarchical Documentation:**
+```bash
+# CI/CD pipeline step for hierarchical documentation
+name: "Documentation Link Check"
+run: |
+  # Install markdown-link-check
+  npm install -g markdown-link-check
+  
+  # Check main README
+  markdown-link-check README.md
+  
+  # Check all module READMEs
+  find . -name "README.md" -not -path "./README.md" -exec markdown-link-check {} \;
+  
+  # Verify module cross-references
+  ./scripts/verify-module-links.sh
+```
+
+**Module Cross-Reference Validation:**
+```bash
+#!/bin/bash
+# Script to verify module cross-references work correctly
+
+verify_module_links() {
+    echo "🔍 Verifying module cross-references..."
+    
+    # Find all module READMEs
+    find . -name "README.md" -not -path "./README.md" | while read module_readme; do
+        module_dir=$(dirname "$module_readme")
+        echo "Checking: $module_readme"
+        
+        # Check if module links back to main project
+        if ! grep -q "Main Project.*README.md" "$module_readme"; then
+            echo "⚠️  Missing main project link in $module_readme"
+        fi
+        
+        # Check if main README references this module
+        module_name=$(basename "$module_dir")
+        if ! grep -q "$module_dir.*README.md" README.md; then
+            echo "⚠️  Module $module_name not referenced in main README.md"
+        fi
+    done
+}
+```
+
+### 2.2. Project Structure Auto-Update
+
+**Main README Project Structure Generation:**
+```bash
+#!/bin/bash
+# Script to automatically update main README project structure
+
+update_project_structure() {
+    echo "📁 Updating project structure in README.md..."
+    
+    # Create temporary structure file
+    echo "## Project Structure" > temp_structure.md
+    echo '```' >> temp_structure.md
+    echo 'project-name/' >> temp_structure.md
+    
+    # Generate tree with README links
+    find . -maxdepth 3 -type d -not -path "./.git*" -not -path "./node_modules*" | sort | while read dir; do
+        if [[ "$dir" == "." ]]; then
+            continue
+        fi
+        
+        # Calculate indentation level
+        level=$(echo "$dir" | tr -cd '/' | wc -c)
+        indent=""
+        for ((i=0; i<level; i++)); do
+            indent+="│   "
+        done
+        
+        # Add entry with link if README exists
+        dir_name=$(basename "$dir")
+        if [[ -f "$dir/README.md" ]]; then
+            echo "${indent}├── ${dir_name}/          # [${dir_name^}](${dir#./}/README.md)" >> temp_structure.md
+        else
+            echo "${indent}├── ${dir_name}/" >> temp_structure.md
+        fi
+    done
+    
+    echo '```' >> temp_structure.md
+    
+    # Replace project structure section in main README
+    # This would need sed/awk logic to replace the specific section
+    echo "📋 Project structure generated in temp_structure.md"
+}
+```
+
+## 3. Documentation Coverage Monitoring
+
+### 3.1. Coverage Analysis
+
+**Documentation Coverage Script:**
+```bash
+#!/bin/bash
+# Analyze documentation coverage across the project
+
+analyze_coverage() {
+    echo "📊 Documentation Coverage Analysis"
+    echo "=================================="
+    
+    total_modules=0
+    documented_modules=0
+    
+    # Find all potential module directories
+    find . -type d -not -path "./.git*" -not -path "./node_modules*" | while read dir; do
+        if [[ "$dir" == "." ]]; then
+            continue
+        fi
+        
+        # Check if directory contains code files
+        code_files=$(find "$dir" -maxdepth 1 -name "*.py" -o -name "*.js" -o -name "*.ts" -o -name "*.go" -o -name "*.rs" | wc -l)
+        
+        if [[ $code_files -gt 1 ]]; then
+            total_modules=$((total_modules + 1))
+            
+            if [[ -f "$dir/README.md" ]]; then
+                documented_modules=$((documented_modules + 1))
+                echo "✅ $dir"
+            else
+                echo "❌ $dir - Missing README.md"
+            fi
+        fi
+    done
+    
+    # Calculate coverage percentage
+    if [[ $total_modules -gt 0 ]]; then
+        coverage=$((documented_modules * 100 / total_modules))
+        echo ""
+        echo "📈 Coverage: $documented_modules/$total_modules modules ($coverage%)"
+    fi
+}
+```
+
+### 3.2. Automated Maintenance Reminders
+
+**Documentation Staleness Detection:**
+```bash
+#!/bin/bash
+# Detect stale documentation that may need updates
+
+check_staleness() {
+    echo "⏰ Checking for stale documentation..."
+    
+    # Find READMEs older than code in the same directory
+    find . -name "README.md" | while read readme; do
+        readme_dir=$(dirname "$readme")
+        
+        # Get most recent code file modification time
+        latest_code=$(find "$readme_dir" -maxdepth 1 -name "*.py" -o -name "*.js" -o -name "*.ts" -printf '%T@ %p\n' 2>/dev/null | sort -n | tail -1 | cut -d' ' -f2-)
+        
+        if [[ -n "$latest_code" ]]; then
+            # Compare modification times
+            if [[ "$latest_code" -nt "$readme" ]]; then
+                echo "📅 Potentially stale: $readme (code newer than docs)"
+                echo "   Latest code: $latest_code"
+            fi
+        fi
+    done
+}
+```
+
+## 4. Quality Assurance Automation
+
+### 4.1. README Validation
+
+**README Content Validation:**
+```bash
+#!/bin/bash
+# Validate README content structure and completeness
+
+validate_readme_structure() {
+    local readme_file=$1
+    echo "🔍 Validating $readme_file"
+    
+    # Check for required sections
+    required_sections=("# " "## Overview" "## ")
+    for section in "${required_sections[@]}"; do
+        if ! grep -q "^$section" "$readme_file"; then
+            echo "⚠️  Missing section: $section"
+        fi
+    done
+    
+    # Check for proper cross-references in module READMEs
+    if [[ "$readme_file" != "./README.md" ]]; then
+        if ! grep -q "Main Project.*README.md" "$readme_file"; then
+            echo "⚠️  Missing main project reference"
+        fi
+    fi
+    
+    # Check for broken internal links
+    grep -o '\[.*\](.*\.md)' "$readme_file" | while read link; do
+        file_path=$(echo "$link" | sed 's/.*](\(.*\))/\1/')
+        full_path=$(dirname "$readme_file")/"$file_path"
+        
+        if [[ ! -f "$full_path" ]]; then
+            echo "❌ Broken link: $link in $readme_file"
+        fi
+    done
+}
+```
+
+### 4.2. Integration with Development Workflow
+
+**Make Target for Documentation Maintenance:**
+```makefile
+# Add to Makefile
+.PHONY: docs-check docs-generate docs-update
+
+docs-check:
+	@echo "🔍 Checking documentation..."
+	@./scripts/analyze-coverage.sh
+	@./scripts/check-staleness.sh
+	@./scripts/verify-module-links.sh
+
+docs-generate:
+	@echo "📋 Generating missing module documentation..."
+	@./scripts/generate-missing-readmes.sh
+
+docs-update:
+	@echo "📁 Updating project structure..."
+	@./scripts/update-project-structure.sh
+
+docs-all: docs-generate docs-update docs-check
+```
+
+## Best Practices
+
+### Automation Principles
+
+1. **Non-Intrusive**: Automation should help, not hinder development workflow
+2. **Early Detection**: Catch documentation issues as early as possible
+3. **Actionable Feedback**: Provide clear, specific guidance on what needs fixing
+4. **Flexible Templates**: Allow customization while maintaining consistency
+5. **Progressive Enhancement**: Start simple, add complexity as needed
+
+### Quality Indicators
+
+- **High Coverage**: Most code modules have corresponding documentation
+- **Current Links**: All cross-references work correctly
+- **Fresh Content**: Documentation stays current with code changes
+- **Consistent Structure**: All READMEs follow established patterns
+- **Automated Validation**: Regular checks prevent documentation drift
+
+By implementing these automation tools, your documentation will stay current, complete, and well-connected across your entire project structure.

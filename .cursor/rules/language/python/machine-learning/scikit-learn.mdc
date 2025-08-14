@@ -1,0 +1,582 @@
+---
+description: Machine learning with scikit-learn including pipelines, cross-validation, and model deployment
+globs: ["*.py", "**/ml/**", "**/models/**", "*_model.py", "*_classifier.py"]
+alwaysApply: false
+---
+
+# Scikit-learn Machine Learning Best Practices
+
+## Overview
+
+Scikit-learn is the most widely used Python library for machine learning, providing efficient tools for data analysis and modeling. This guide covers best practices for building robust, production-ready machine learning pipelines.
+
+## Core Principles
+
+- Use scikit-learn for consistent machine learning workflow and model development
+- Follow proper data preprocessing with transformers and pipelines
+- Implement cross-validation for robust model evaluation and selection
+- Use proper train/validation/test splits to avoid data leakage
+- Apply feature scaling and normalization appropriately for different algorithms
+- Use pipelines to ensure consistent preprocessing in training and inference
+- Handle categorical variables with proper encoding techniques
+- Implement proper hyperparameter tuning with GridSearchCV or RandomizedSearchCV
+- Use appropriate evaluation metrics for different types of machine learning problems
+- Save and load models properly with joblib or pickle for deployment
+
+## Data Preparation
+
+### Train-Test Split
+
+```python
+from sklearn.model_selection import train_test_split
+import pandas as pd
+import numpy as np
+
+def prepare_data(df: pd.DataFrame, target_column: str, test_size: float = 0.2, 
+                 random_state: int = 42) -> tuple:
+    """Prepare data with proper train-test split"""
+    # Separate features and target
+    X = df.drop(columns=[target_column])
+    y = df[target_column]
+    
+    # Split data
+    X_train, X_test, y_train, y_test = train_test_split(
+        X, y, test_size=test_size, random_state=random_state, stratify=y
+    )
+    
+    # Further split train into train and validation
+    X_train, X_val, y_train, y_val = train_test_split(
+        X_train, y_train, test_size=0.2, random_state=random_state, stratify=y_train
+    )
+    
+    print(f"Train set: {X_train.shape}")
+    print(f"Validation set: {X_val.shape}")
+    print(f"Test set: {X_test.shape}")
+    
+    return X_train, X_val, X_test, y_train, y_val, y_test
+```
+
+### Feature Engineering
+
+```python
+from sklearn.preprocessing import StandardScaler, OneHotEncoder, PolynomialFeatures
+from sklearn.compose import ColumnTransformer
+from sklearn.impute import SimpleImputer
+from sklearn.feature_selection import SelectKBest, f_classif
+
+def create_preprocessor(numeric_features: list, categorical_features: list) -> ColumnTransformer:
+    """Create preprocessing pipeline for mixed data types"""
+    
+    # Numeric pipeline
+    numeric_transformer = Pipeline(steps=[
+        ('imputer', SimpleImputer(strategy='median')),
+        ('scaler', StandardScaler()),
+        ('poly', PolynomialFeatures(degree=2, include_bias=False))
+    ])
+    
+    # Categorical pipeline
+    categorical_transformer = Pipeline(steps=[
+        ('imputer', SimpleImputer(strategy='constant', fill_value='missing')),
+        ('onehot', OneHotEncoder(drop='first', sparse_output=False))
+    ])
+    
+    # Combine preprocessing steps
+    preprocessor = ColumnTransformer(
+        transformers=[
+            ('num', numeric_transformer, numeric_features),
+            ('cat', categorical_transformer, categorical_features)
+        ])
+    
+    return preprocessor
+
+# Custom transformer example
+from sklearn.base import BaseEstimator, TransformerMixin
+
+class LogTransformer(BaseEstimator, TransformerMixin):
+    """Custom transformer for log transformation"""
+    
+    def __init__(self, features=None, offset=1):
+        self.features = features
+        self.offset = offset
+    
+    def fit(self, X, y=None):
+        return self
+    
+    def transform(self, X):
+        X_copy = X.copy()
+        if self.features:
+            X_copy[self.features] = np.log(X_copy[self.features] + self.offset)
+        return X_copy
+```
+
+## Machine Learning Pipelines
+
+### Classification Pipeline
+
+```python
+from sklearn.pipeline import Pipeline
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.linear_model import LogisticRegression
+from sklearn.svm import SVC
+from sklearn.metrics import classification_report, confusion_matrix
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+def build_classification_pipeline(preprocessor, model_type='random_forest'):
+    """Build classification pipeline with preprocessing and model"""
+    
+    # Select model
+    models = {
+        'random_forest': RandomForestClassifier(
+            n_estimators=100,
+            max_depth=10,
+            min_samples_split=5,
+            random_state=42
+        ),
+        'logistic': LogisticRegression(
+            max_iter=1000,
+            random_state=42
+        ),
+        'svm': SVC(
+            kernel='rbf',
+            probability=True,
+            random_state=42
+        )
+    }
+    
+    model = models.get(model_type, models['random_forest'])
+    
+    # Create pipeline
+    pipeline = Pipeline(steps=[
+        ('preprocessor', preprocessor),
+        ('feature_selection', SelectKBest(f_classif, k=20)),
+        ('classifier', model)
+    ])
+    
+    return pipeline
+
+def evaluate_classifier(pipeline, X_test, y_test, class_names=None):
+    """Evaluate classifier performance"""
+    # Predictions
+    y_pred = pipeline.predict(X_test)
+    y_proba = pipeline.predict_proba(X_test)
+    
+    # Classification report
+    print("Classification Report:")
+    print(classification_report(y_test, y_pred, target_names=class_names))
+    
+    # Confusion matrix
+    cm = confusion_matrix(y_test, y_pred)
+    plt.figure(figsize=(8, 6))
+    sns.heatmap(cm, annot=True, fmt='d', cmap='Blues', 
+                xticklabels=class_names, yticklabels=class_names)
+    plt.title('Confusion Matrix')
+    plt.ylabel('True Label')
+    plt.xlabel('Predicted Label')
+    plt.show()
+    
+    return {
+        'predictions': y_pred,
+        'probabilities': y_proba,
+        'confusion_matrix': cm
+    }
+```
+
+### Regression Pipeline
+
+```python
+from sklearn.ensemble import GradientBoostingRegressor
+from sklearn.metrics import mean_squared_error, mean_absolute_error, r2_score
+from sklearn.inspection import permutation_importance
+
+def build_regression_pipeline(preprocessor):
+    """Build regression pipeline"""
+    
+    pipeline = Pipeline(steps=[
+        ('preprocessor', preprocessor),
+        ('regressor', GradientBoostingRegressor(
+            n_estimators=100,
+            learning_rate=0.1,
+            max_depth=5,
+            random_state=42
+        ))
+    ])
+    
+    return pipeline
+
+def evaluate_regressor(pipeline, X_test, y_test, feature_names=None):
+    """Evaluate regression model"""
+    # Predictions
+    y_pred = pipeline.predict(X_test)
+    
+    # Metrics
+    mse = mean_squared_error(y_test, y_pred)
+    mae = mean_absolute_error(y_test, y_pred)
+    r2 = r2_score(y_test, y_pred)
+    
+    print(f"Mean Squared Error: {mse:.4f}")
+    print(f"Mean Absolute Error: {mae:.4f}")
+    print(f"R² Score: {r2:.4f}")
+    
+    # Plot predictions vs actual
+    plt.figure(figsize=(10, 6))
+    plt.scatter(y_test, y_pred, alpha=0.5)
+    plt.plot([y_test.min(), y_test.max()], [y_test.min(), y_test.max()], 'r--', lw=2)
+    plt.xlabel('Actual')
+    plt.ylabel('Predicted')
+    plt.title('Predictions vs Actual Values')
+    plt.show()
+    
+    # Feature importance
+    if feature_names and hasattr(pipeline.named_steps['regressor'], 'feature_importances_'):
+        importances = pipeline.named_steps['regressor'].feature_importances_
+        indices = np.argsort(importances)[::-1][:20]
+        
+        plt.figure(figsize=(10, 6))
+        plt.bar(range(len(indices)), importances[indices])
+        plt.xticks(range(len(indices)), [feature_names[i] for i in indices], rotation=45)
+        plt.title('Top 20 Feature Importances')
+        plt.tight_layout()
+        plt.show()
+    
+    return {
+        'mse': mse,
+        'mae': mae,
+        'r2': r2,
+        'predictions': y_pred
+    }
+```
+
+## Cross-Validation
+
+### K-Fold Cross-Validation
+
+```python
+from sklearn.model_selection import cross_validate, StratifiedKFold, KFold
+from sklearn.model_selection import cross_val_predict
+
+def perform_cross_validation(pipeline, X, y, cv=5, scoring=None, 
+                           classification=True):
+    """Perform cross-validation with multiple metrics"""
+    
+    # Define cross-validation strategy
+    if classification:
+        cv_strategy = StratifiedKFold(n_splits=cv, shuffle=True, random_state=42)
+        if scoring is None:
+            scoring = ['accuracy', 'precision_macro', 'recall_macro', 'f1_macro']
+    else:
+        cv_strategy = KFold(n_splits=cv, shuffle=True, random_state=42)
+        if scoring is None:
+            scoring = ['neg_mean_squared_error', 'neg_mean_absolute_error', 'r2']
+    
+    # Perform cross-validation
+    cv_results = cross_validate(
+        pipeline, X, y,
+        cv=cv_strategy,
+        scoring=scoring,
+        return_train_score=True,
+        n_jobs=-1
+    )
+    
+    # Display results
+    print(f"\nCross-Validation Results ({cv} folds):")
+    print("-" * 50)
+    
+    for metric in scoring:
+        train_scores = cv_results[f'train_{metric}']
+        test_scores = cv_results[f'test_{metric}']
+        
+        print(f"{metric}:")
+        print(f"  Train: {train_scores.mean():.4f} (+/- {train_scores.std() * 2:.4f})")
+        print(f"  Test:  {test_scores.mean():.4f} (+/- {test_scores.std() * 2:.4f})")
+    
+    # Get cross-validated predictions
+    cv_predictions = cross_val_predict(pipeline, X, y, cv=cv_strategy)
+    
+    return cv_results, cv_predictions
+
+# Time series cross-validation
+from sklearn.model_selection import TimeSeriesSplit
+
+def time_series_cv(pipeline, X, y, n_splits=5):
+    """Time series specific cross-validation"""
+    tscv = TimeSeriesSplit(n_splits=n_splits)
+    
+    scores = []
+    for train_idx, test_idx in tscv.split(X):
+        X_train, X_test = X.iloc[train_idx], X.iloc[test_idx]
+        y_train, y_test = y.iloc[train_idx], y.iloc[test_idx]
+        
+        pipeline.fit(X_train, y_train)
+        score = pipeline.score(X_test, y_test)
+        scores.append(score)
+    
+    print(f"Time Series CV Scores: {scores}")
+    print(f"Mean Score: {np.mean(scores):.4f} (+/- {np.std(scores) * 2:.4f})")
+    
+    return scores
+```
+
+## Hyperparameter Tuning
+
+### Grid Search
+
+```python
+from sklearn.model_selection import GridSearchCV, RandomizedSearchCV
+from scipy.stats import randint, uniform
+
+def tune_hyperparameters_grid(pipeline, X_train, y_train, param_grid=None):
+    """Perform grid search for hyperparameter tuning"""
+    
+    if param_grid is None:
+        # Default parameter grid for RandomForest
+        param_grid = {
+            'classifier__n_estimators': [50, 100, 200],
+            'classifier__max_depth': [5, 10, 20, None],
+            'classifier__min_samples_split': [2, 5, 10],
+            'classifier__min_samples_leaf': [1, 2, 4],
+            'feature_selection__k': [10, 20, 30, 'all']
+        }
+    
+    grid_search = GridSearchCV(
+        pipeline,
+        param_grid,
+        cv=5,
+        scoring='f1_macro',
+        n_jobs=-1,
+        verbose=1
+    )
+    
+    grid_search.fit(X_train, y_train)
+    
+    print(f"Best parameters: {grid_search.best_params_}")
+    print(f"Best cross-validation score: {grid_search.best_score_:.4f}")
+    
+    return grid_search
+
+def tune_hyperparameters_random(pipeline, X_train, y_train, param_distributions=None, 
+                               n_iter=50):
+    """Perform randomized search for hyperparameter tuning"""
+    
+    if param_distributions is None:
+        # Default parameter distributions
+        param_distributions = {
+            'classifier__n_estimators': randint(50, 300),
+            'classifier__max_depth': randint(5, 50),
+            'classifier__min_samples_split': randint(2, 20),
+            'classifier__min_samples_leaf': randint(1, 10),
+            'feature_selection__k': randint(5, 50)
+        }
+    
+    random_search = RandomizedSearchCV(
+        pipeline,
+        param_distributions,
+        n_iter=n_iter,
+        cv=5,
+        scoring='f1_macro',
+        n_jobs=-1,
+        verbose=1,
+        random_state=42
+    )
+    
+    random_search.fit(X_train, y_train)
+    
+    print(f"Best parameters: {random_search.best_params_}")
+    print(f"Best cross-validation score: {random_search.best_score_:.4f}")
+    
+    # Plot parameter importance
+    results_df = pd.DataFrame(random_search.cv_results_)
+    important_params = ['param_classifier__n_estimators', 
+                       'param_classifier__max_depth',
+                       'mean_test_score']
+    
+    if all(col in results_df.columns for col in important_params[:2]):
+        plt.figure(figsize=(10, 6))
+        scatter = plt.scatter(
+            results_df[important_params[0]], 
+            results_df[important_params[1]],
+            c=results_df[important_params[2]], 
+            cmap='viridis'
+        )
+        plt.colorbar(scatter)
+        plt.xlabel('n_estimators')
+        plt.ylabel('max_depth')
+        plt.title('Hyperparameter Search Results')
+        plt.show()
+    
+    return random_search
+```
+
+## Model Persistence
+
+### Saving and Loading Models
+
+```python
+import joblib
+import pickle
+from pathlib import Path
+import json
+from datetime import datetime
+
+class ModelManager:
+    """Manage model saving and loading with metadata"""
+    
+    def __init__(self, models_dir='models'):
+        self.models_dir = Path(models_dir)
+        self.models_dir.mkdir(exist_ok=True)
+    
+    def save_model(self, pipeline, model_name, metrics=None, metadata=None):
+        """Save model with metadata"""
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        model_filename = f"{model_name}_{timestamp}.joblib"
+        model_path = self.models_dir / model_filename
+        
+        # Save model
+        joblib.dump(pipeline, model_path)
+        
+        # Save metadata
+        meta = {
+            'model_name': model_name,
+            'timestamp': timestamp,
+            'model_file': model_filename,
+            'sklearn_version': sklearn.__version__,
+            'metrics': metrics or {},
+            'metadata': metadata or {}
+        }
+        
+        meta_path = self.models_dir / f"{model_name}_{timestamp}_metadata.json"
+        with open(meta_path, 'w') as f:
+            json.dump(meta, f, indent=2)
+        
+        print(f"Model saved to {model_path}")
+        print(f"Metadata saved to {meta_path}")
+        
+        return model_path, meta_path
+    
+    def load_model(self, model_path):
+        """Load model and its metadata"""
+        model = joblib.load(model_path)
+        
+        # Try to load metadata
+        meta_path = model_path.parent / f"{model_path.stem}_metadata.json"
+        metadata = {}
+        if meta_path.exists():
+            with open(meta_path) as f:
+                metadata = json.load(f)
+        
+        return model, metadata
+    
+    def list_models(self):
+        """List all saved models"""
+        models = []
+        for meta_file in self.models_dir.glob("*_metadata.json"):
+            with open(meta_file) as f:
+                metadata = json.load(f)
+                models.append(metadata)
+        
+        return sorted(models, key=lambda x: x['timestamp'], reverse=True)
+
+# Usage example
+model_manager = ModelManager()
+
+# Save model
+model_path, meta_path = model_manager.save_model(
+    pipeline,
+    "customer_churn_classifier",
+    metrics={'accuracy': 0.92, 'f1_score': 0.89},
+    metadata={'features': feature_names, 'target': 'churn'}
+)
+
+# Load model
+loaded_pipeline, loaded_metadata = model_manager.load_model(model_path)
+```
+
+## Production Deployment
+
+### Model Serving
+
+```python
+from sklearn.base import BaseEstimator
+import numpy as np
+
+class ModelServer:
+    """Simple model server for predictions"""
+    
+    def __init__(self, model_path):
+        self.pipeline, self.metadata = ModelManager().load_model(model_path)
+        self.feature_names = self.metadata.get('metadata', {}).get('features', [])
+    
+    def predict(self, data):
+        """Make predictions on new data"""
+        # Ensure data has correct features
+        if isinstance(data, dict):
+            data = pd.DataFrame([data])
+        elif isinstance(data, list):
+            data = pd.DataFrame(data)
+        
+        # Validate features
+        if self.feature_names:
+            missing_features = set(self.feature_names) - set(data.columns)
+            if missing_features:
+                raise ValueError(f"Missing features: {missing_features}")
+            
+            # Reorder columns to match training
+            data = data[self.feature_names]
+        
+        # Make predictions
+        predictions = self.pipeline.predict(data)
+        
+        # Get probabilities if available
+        probabilities = None
+        if hasattr(self.pipeline, 'predict_proba'):
+            probabilities = self.pipeline.predict_proba(data)
+        
+        return {
+            'predictions': predictions.tolist(),
+            'probabilities': probabilities.tolist() if probabilities is not None else None
+        }
+    
+    def validate_input(self, data):
+        """Validate input data"""
+        # Add validation logic
+        pass
+
+# Flask API example
+from flask import Flask, request, jsonify
+
+app = Flask(__name__)
+model_server = ModelServer('models/best_model.joblib')
+
+@app.route('/predict', methods=['POST'])
+def predict():
+    try:
+        data = request.json
+        result = model_server.predict(data)
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 400
+
+if __name__ == '__main__':
+    app.run(debug=False)
+```
+
+## Best Practices
+
+### Do's
+- Always use pipelines to prevent data leakage
+- Perform proper cross-validation before final evaluation
+- Use stratified splits for imbalanced datasets
+- Scale features appropriately for distance-based algorithms
+- Document feature engineering steps
+- Version control your models and preprocessing steps
+- Monitor model performance in production
+
+### Don'ts
+- Don't fit preprocessors on test data
+- Don't use test set for hyperparameter tuning
+- Don't ignore class imbalance
+- Don't forget to handle missing values
+- Don't deploy models without proper validation
+- Don't ignore feature importance analysis
+
+This comprehensive guide ensures effective machine learning development with scikit-learn following industry best practices.

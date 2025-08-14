@@ -1,0 +1,183 @@
+---
+description: Ensures all generated code follows best practices for readability, maintainability, and ease of review
+globs: 
+alwaysApply: true
+---
+
+# Code Review Standards
+
+## Critical Rules
+
+- ALWAYS write code with the reviewer in mind
+- USE meaningful variable and function names that express intent
+- INCLUDE comments for complex logic, but avoid redundant comments
+- MAINTAIN consistent code style throughout the file/project
+- KEEP functions and methods focused on a single responsibility
+- LIMIT function/method length to what fits on a single screen (roughly 50 lines)
+- AVOID deeply nested code (max 3-4 levels of indentation)
+
+## Code Organization
+
+### Readability First
+- **Clear Intent**: Code should clearly express what it does without extensive comments
+- **Logical Flow**: Structure code to follow natural reading order (top to bottom)
+- **Consistent Patterns**: Use the same patterns for similar operations
+- **Separation of Concerns**: Keep different functionalities in separate functions/modules
+
+### Self-Documenting Code
+
+<example>
+# GOOD - Clear intent without comments
+def calculate_order_discount(order_total: float, customer_tier: str) -> float:
+    """Calculate discount based on order total and customer tier."""
+    TIER_DISCOUNTS = {
+        'bronze': 0.05,
+        'silver': 0.10,
+        'gold': 0.15,
+        'platinum': 0.20
+    }
+    
+    base_discount = TIER_DISCOUNTS.get(customer_tier.lower(), 0)
+    
+    # Volume discount for large orders
+    if order_total > 1000:
+        volume_discount = 0.05
+    elif order_total > 500:
+        volume_discount = 0.02
+    else:
+        volume_discount = 0
+    
+    total_discount = min(base_discount + volume_discount, 0.25)  # Cap at 25%
+    return order_total * total_discount
+</example>
+
+<example type="invalid">
+# BAD - Unclear variable names and logic
+def calc(t, c):
+    d = 0
+    if c == 'b':
+        d = 0.05
+    elif c == 's':
+        d = 0.1
+    # ... more conditions
+    
+    if t > 1000:
+        d += 0.05
+    
+    return t * d
+</example>
+
+## Review-Friendly Patterns
+
+### Chunk Related Changes
+- Group related changes together
+- Separate refactoring from feature changes
+- Make atomic commits with clear messages
+
+### Predictable Structure
+```python
+# Standard class structure
+class ServiceClass:
+    # 1. Class constants
+    DEFAULT_TIMEOUT = 30
+    
+    # 2. Initialization
+    def __init__(self):
+        pass
+    
+    # 3. Public methods
+    def public_method(self):
+        pass
+    
+    # 4. Private/helper methods
+    def _helper_method(self):
+        pass
+    
+    # 5. Properties
+    @property
+    def status(self):
+        pass
+```
+
+### Error Handling Clarity
+<example>
+# Clear error handling with context
+try:
+    response = api_client.get_user(user_id)
+    user_data = response.json()
+except requests.HTTPError as e:
+    logger.error(f"Failed to fetch user {user_id}: HTTP {e.response.status_code}")
+    raise UserNotFoundError(f"User {user_id} not found") from e
+except requests.RequestException as e:
+    logger.error(f"Network error fetching user {user_id}: {str(e)}")
+    raise ServiceUnavailableError("User service temporarily unavailable") from e
+</example>
+
+## Documentation Standards
+
+### When to Add Comments
+- **Complex algorithms**: Explain the approach, not the implementation
+- **Business logic**: Document why, not what
+- **Workarounds**: Explain temporary solutions and link to issues
+- **Performance optimizations**: Document trade-offs made
+
+### Code Review Checklist
+Every code submission should:
+- ✅ Pass all automated tests
+- ✅ Include appropriate error handling
+- ✅ Follow project naming conventions
+- ✅ Avoid code duplication (DRY principle)
+- ✅ Include necessary logging for debugging
+- ✅ Handle edge cases appropriately
+- ✅ Maintain backward compatibility (when applicable)
+- ✅ Update related documentation
+
+## Refactoring for Reviewability
+
+### Extract Complex Conditions
+<example>
+# GOOD - Extracted complex condition
+def is_eligible_for_premium_shipping(order):
+    is_premium_member = order.customer.tier in ['gold', 'platinum']
+    meets_minimum_amount = order.total >= 100
+    is_prime_location = order.shipping_address.zone in PRIME_ZONES
+    
+    return is_premium_member or (meets_minimum_amount and is_prime_location)
+
+# BAD - Complex inline condition
+if order.customer.tier in ['gold', 'platinum'] or (order.total >= 100 and order.shipping_address.zone in PRIME_ZONES):
+    # Apply premium shipping
+</example>
+
+### Use Guard Clauses
+<example>
+# GOOD - Early returns reduce nesting
+def process_payment(payment):
+    if not payment:
+        raise ValueError("Payment cannot be null")
+    
+    if payment.amount <= 0:
+        raise ValueError("Payment amount must be positive")
+    
+    if not payment.is_valid():
+        raise PaymentValidationError("Invalid payment details")
+    
+    # Main logic here with minimal nesting
+    return payment_processor.process(payment)
+</example>
+
+## Tools and Automation
+
+### Pre-commit Checks
+- Format code automatically (black, prettier, gofmt)
+- Lint for common issues
+- Check for security vulnerabilities
+- Validate commit messages
+
+### Review Tools Integration
+- Use inline comments for specific line feedback
+- Leverage automated code analysis results
+- Check diff coverage for new code
+- Ensure CI/CD passes before review
+
+This rule ensures that all generated code is optimized for human review, making it easier for teams to collaborate, maintain, and evolve the codebase.

@@ -1,0 +1,88 @@
+---
+alwaysApply: false
+description: Vite build tool rules for fast frontend development and optimized production
+  builds.
+globs:
+- '*.js,*.jsx,*.ts,*.tsx,*.vue'
+---
+
+- Use Vite for fast frontend development with hot module replacement (HMR).
+- Configure Vite with appropriate plugins for your framework (React, Vue, etc.).
+- Leverage Vite's native ES modules support for faster development builds.
+- Implement proper environment configuration for development and production.
+- Use Vite's built-in TypeScript support without additional transpilation.
+- Configure Vite for optimal production builds with code splitting and tree shaking.
+- Use Vite plugins for additional functionality (PWA, legacy browser support, etc.).
+- Implement proper asset handling and optimization in Vite configuration.
+- Configure Vite dev server with proxy settings for API development.
+- Use Vite's build analysis tools for bundle optimization and performance monitoring.
+
+# Vite Best Practices
+
+
+## Overview
+
+Vite build tool rules for fast frontend development and optimized production builds.
+
+
+## Core Concepts
+
+### Key Features
+- Feature 1: Description of what this feature does
+- Feature 2: How this improves workflow
+- Feature 3: Integration capabilities
+- Feature 4: Performance benefits
+
+### Common Use Cases
+1. **Use Case 1**: When you need to accomplish X
+2. **Use Case 2**: For scenarios requiring Y
+3. **Use Case 3**: To optimize Z processes
+
+### Best Practices
+- Always follow the principle of least privilege
+- Keep configurations version controlled
+- Monitor performance metrics
+- Implement proper error handling
+- Use consistent naming conventions
+
+## Advanced Topics
+
+### Performance Optimization
+
+When working with Vite, consider these optimization strategies:
+- Cache frequently accessed data
+- Use batch operations where possible
+- Implement connection pooling
+- Monitor resource usage
+- Profile code to identify bottlenecks
+
+### Troubleshooting Guide
+
+Common issues and solutions:
+
+1. **Issue**: Configuration not loading
+   **Solution**: Check file paths and permissions
+
+2. **Issue**: Performance degradation
+   **Solution**: Review logs and increase resource limits
+
+3. **Issue**: Integration failures
+   **Solution**: Verify API versions and compatibility
+
+### Additional Resources
+
+- [Official Documentation](#)
+- [Community Forum](#)
+- [GitHub Repository](#)
+- [Tutorial Videos](#)
+- [Best Practices Guide](#)
+
+### Contributing
+
+Contributions are welcome! Please:
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Submit a pull request
+
+For more details, see CONTRIBUTING.md

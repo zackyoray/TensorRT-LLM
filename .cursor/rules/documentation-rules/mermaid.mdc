@@ -1,0 +1,88 @@
+---
+alwaysApply: false
+description: Mermaid diagram-as-code rules for creating visual documentation with
+  code-based diagrams.
+globs:
+- '*.md,*.mmd'
+---
+
+- Use Mermaid for creating maintainable diagrams and visualizations as code.
+- Choose appropriate diagram types (flowchart, sequence, class, ERD) for different use cases.
+- Use clear and descriptive node labels and relationship descriptions.
+- Apply consistent styling and theming for professional diagram appearance.
+- Structure complex diagrams with proper grouping and subgraphs for clarity.
+- Use appropriate arrow types and line styles to convey different relationships.
+- Implement proper version control for diagrams by storing them as text.
+- Include diagrams in documentation workflows with automated rendering.
+- Use Mermaid live editor for rapid prototyping and collaborative diagram design.
+- Export diagrams to various formats (SVG, PNG, PDF) for different documentation needs.
+
+# Mermaid Best Practices
+
+
+## Overview
+
+Mermaid diagram-as-code rules for creating visual documentation with code-based diagrams.
+
+
+## Core Concepts
+
+### Key Features
+- Feature 1: Description of what this feature does
+- Feature 2: How this improves workflow
+- Feature 3: Integration capabilities
+- Feature 4: Performance benefits
+
+### Common Use Cases
+1. **Use Case 1**: When you need to accomplish X
+2. **Use Case 2**: For scenarios requiring Y
+3. **Use Case 3**: To optimize Z processes
+
+### Best Practices
+- Always follow the principle of least privilege
+- Keep configurations version controlled
+- Monitor performance metrics
+- Implement proper error handling
+- Use consistent naming conventions
+
+## Advanced Topics
+
+### Performance Optimization
+
+When working with Mermaid, consider these optimization strategies:
+- Cache frequently accessed data
+- Use batch operations where possible
+- Implement connection pooling
+- Monitor resource usage
+- Profile code to identify bottlenecks
+
+### Troubleshooting Guide
+
+Common issues and solutions:
+
+1. **Issue**: Configuration not loading
+   **Solution**: Check file paths and permissions
+
+2. **Issue**: Performance degradation
+   **Solution**: Review logs and increase resource limits
+
+3. **Issue**: Integration failures
+   **Solution**: Verify API versions and compatibility
+
+### Additional Resources
+
+- [Official Documentation](#)
+- [Community Forum](#)
+- [GitHub Repository](#)
+- [Tutorial Videos](#)
+- [Best Practices Guide](#)
+
+### Contributing
+
+Contributions are welcome! Please:
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Submit a pull request
+
+For more details, see CONTRIBUTING.md

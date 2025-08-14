@@ -1,0 +1,722 @@
+---
+description: Sphinx documentation generator rules for building comprehensive technical documentation
+globs: ["*.rst", "*.py", "conf.py", "Makefile", "*.sphinx", "doc/**", "docs/**"]
+alwaysApply: false
+---
+
+# Sphinx Documentation Best Practices
+
+## Overview
+
+Sphinx is a powerful documentation generator that transforms reStructuredText and Markdown sources into beautiful, searchable documentation. Originally created for Python documentation, it now supports multiple programming languages and documentation styles.
+
+## Core Principles
+
+- Use Sphinx for generating comprehensive technical documentation from reStructuredText sources
+- Structure documentation with proper toctree organization and hierarchical content layout
+- Use appropriate Sphinx directives and roles for rich documentation formatting
+- Implement cross-references and intersphinx linking for connected documentation ecosystems
+- Configure Sphinx themes and extensions for enhanced documentation presentation
+- Use autodoc extensions for automatic API documentation generation from code
+- Implement proper code highlighting and example integration with sphinx-gallery or similar
+- Configure multiple output formats (HTML, PDF, EPUB) for diverse documentation needs
+- Use internationalization features for multi-language documentation support
+- Integrate with version control and CI/CD for automated documentation deployment
+
+## Project Setup
+
+### Installation and Initialization
+
+```bash
+# Install Sphinx
+pip install sphinx sphinx-rtd-theme sphinx-autodoc-typehints
+
+# Quick start
+sphinx-quickstart docs
+
+# Build documentation
+cd docs
+make html
+```
+
+### Configuration (conf.py)
+
+```python
+# docs/source/conf.py
+import os
+import sys
+from datetime import datetime
+
+# Add project root to Python path for autodoc
+sys.path.insert(0, os.path.abspath('../..'))
+
+# Project information
+project = 'My Project'
+copyright = f'{datetime.now().year}, Your Name'
+author = 'Your Name'
+release = '1.0.0'
+
+# General configuration
+extensions = [
+    'sphinx.ext.autodoc',
+    'sphinx.ext.napoleon',
+    'sphinx.ext.viewcode',
+    'sphinx.ext.intersphinx',
+    'sphinx.ext.coverage',
+    'sphinx.ext.todo',
+    'sphinx.ext.autosummary',
+    'sphinx_rtd_theme',
+    'sphinx_autodoc_typehints',
+    'sphinx_copybutton',
+    'myst_parser',  # For Markdown support
+]
+
+# Extension settings
+autodoc_default_options = {
+    'members': True,
+    'member-order': 'bysource',
+    'special-members': '__init__',
+    'undoc-members': True,
+    'exclude-members': '__weakref__'
+}
+
+# Napoleon settings for Google/NumPy style docstrings
+napoleon_google_docstring = True
+napoleon_numpy_docstring = True
+napoleon_include_init_with_doc = True
+napoleon_include_private_with_doc = False
+napoleon_include_special_with_doc = True
+napoleon_use_admonition_for_examples = True
+napoleon_use_admonition_for_notes = True
+napoleon_use_admonition_for_references = False
+napoleon_use_ivar = False
+napoleon_use_param = True
+napoleon_use_rtype = True
+
+# Intersphinx mapping
+intersphinx_mapping = {
+    'python': ('https://docs.python.org/3', None),
+    'numpy': ('https://numpy.org/doc/stable/', None),
+    'pandas': ('https://pandas.pydata.org/docs/', None),
+}
+
+# Theme configuration
+html_theme = 'sphinx_rtd_theme'
+html_theme_options = {
+    'navigation_depth': 4,
+    'collapse_navigation': False,
+    'sticky_navigation': True,
+    'includehidden': True,
+    'titles_only': False,
+    'display_version': True,
+    'prev_next_buttons_location': 'bottom',
+}
+
+# Static files
+html_static_path = ['_static']
+html_css_files = ['custom.css']
+html_js_files = ['custom.js']
+
+# Logo and favicon
+html_logo = '_static/logo.png'
+html_favicon = '_static/favicon.ico'
+
+# Source suffix
+source_suffix = {
+    '.rst': 'restructuredtext',
+    '.md': 'markdown',
+}
+
+# Master doc
+master_doc = 'index'
+
+# Exclude patterns
+exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store', '**.ipynb_checkpoints']
+
+# Pygments style
+pygments_style = 'sphinx'
+
+# -- Options for HTML output
+html_show_sourcelink = True
+html_sidebars = {
+    '**': [
+        'globaltoc.html',
+        'relations.html',
+        'sourcelink.html',
+        'searchbox.html',
+    ]
+}
+
+# -- Options for PDF output
+latex_elements = {
+    'papersize': 'letterpaper',
+    'pointsize': '10pt',
+    'preamble': r'''
+\usepackage{charter}
+\usepackage[defaultsans]{lato}
+\usepackage{inconsolata}
+    ''',
+}
+
+# Grouping the document tree
+latex_documents = [
+    (master_doc, 'project.tex', 'Project Documentation',
+     'Your Name', 'manual'),
+]
+```
+
+## Document Structure
+
+### Master Document (index.rst)
+
+```rst
+.. My Project documentation master file
+
+Welcome to My Project's documentation!
+======================================
+
+.. toctree::
+   :maxdepth: 2
+   :caption: User Guide:
+
+   getting_started
+   installation
+   quickstart
+   tutorials/index
+
+.. toctree::
+   :maxdepth: 2
+   :caption: API Reference:
+
+   api/modules
+   api/core
+   api/utils
+
+.. toctree::
+   :maxdepth: 2
+   :caption: Developer Guide:
+
+   contributing
+   development
+   testing
+   changelog
+
+.. toctree::
+   :maxdepth: 1
+   :caption: Additional Resources:
+
+   faq
+   glossary
+   license
+
+Indices and tables
+==================
+
+* :ref:`genindex`
+* :ref:`modindex`
+* :ref:`search`
+```
+
+### Module Documentation
+
+```rst
+Core Module
+===========
+
+.. automodule:: myproject.core
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+Classes
+-------
+
+.. autoclass:: myproject.core.BaseClass
+   :members:
+   :special-members: __init__
+   :show-inheritance:
+
+   .. automethod:: __init__
+
+Functions
+---------
+
+.. autofunction:: myproject.core.process_data
+
+Exceptions
+----------
+
+.. autoexception:: myproject.core.CoreException
+   :members:
+   :show-inheritance:
+```
+
+## reStructuredText Syntax
+
+### Basic Formatting
+
+```rst
+Headers
+=======
+
+Section
+-------
+
+Subsection
+~~~~~~~~~~
+
+Subsubsection
+^^^^^^^^^^^^^
+
+Text Formatting
+---------------
+
+*Italic text* and **bold text**.
+
+``Inline code`` and :code:`colored code`.
+
+Lists
+-----
+
+* Bullet list item 1
+* Bullet list item 2
+  
+  * Nested item
+  * Another nested item
+
+1. Numbered list item 1
+2. Numbered list item 2
+
+   a. Nested item
+   b. Another nested item
+
+Definition Lists
+----------------
+
+Term 1
+    Definition of term 1
+
+Term 2
+    Definition of term 2
+```
+
+### Code Blocks
+
+```rst
+Code Examples
+=============
+
+Python code block with syntax highlighting:
+
+.. code-block:: python
+   :linenos:
+   :emphasize-lines: 3,4
+
+   def hello_world():
+       """Say hello to the world."""
+       message = "Hello, World!"
+       print(message)
+       return message
+
+Shell commands:
+
+.. code-block:: bash
+
+   $ pip install sphinx
+   $ sphinx-quickstart
+   $ make html
+
+Include code from file:
+
+.. literalinclude:: ../examples/sample.py
+   :language: python
+   :lines: 1-10
+   :linenos:
+   :emphasize-lines: 5-7
+```
+
+### Directives and Roles
+
+```rst
+Admonitions
+===========
+
+.. note::
+   This is a note admonition.
+
+.. warning::
+   This is a warning message.
+
+.. danger::
+   This is a danger message.
+
+.. tip::
+   This is a helpful tip.
+
+.. seealso::
+   Related information can be found in :doc:`other_page`.
+
+Custom Admonitions
+------------------
+
+.. admonition:: Custom Title
+   :class: hint
+
+   This is a custom admonition with a custom title.
+
+Versioning
+----------
+
+.. versionadded:: 2.0
+   This feature was added in version 2.0.
+
+.. versionchanged:: 2.5
+   The behavior changed in version 2.5.
+
+.. deprecated:: 3.0
+   This feature is deprecated since version 3.0.
+```
+
+### Cross-References
+
+```rst
+Cross-References
+================
+
+Link to another document: :doc:`installation`
+
+Link to a section: :ref:`my-reference-label`
+
+Link to Python objects:
+
+* :py:func:`mymodule.myfunction`
+* :py:class:`mymodule.MyClass`
+* :py:meth:`mymodule.MyClass.method`
+* :py:attr:`mymodule.MyClass.attribute`
+* :py:mod:`mymodule`
+
+External links: `Python <https://python.org>`_
+
+.. _my-reference-label:
+
+Section with Label
+------------------
+
+This section can be referenced using :ref:`my-reference-label`.
+```
+
+## Advanced Features
+
+### Custom Extensions
+
+```python
+# _ext/custom_extension.py
+from docutils import nodes
+from docutils.parsers.rst import Directive
+from sphinx.util.docutils import SphinxDirective
+
+class TodoDirective(SphinxDirective):
+    """Custom todo directive"""
+    
+    has_content = True
+    required_arguments = 0
+    optional_arguments = 1
+    option_spec = {
+        'class': str,
+        'priority': str,
+    }
+    
+    def run(self):
+        # Parse content
+        todo_node = nodes.admonition()
+        todo_node['classes'].append('todo')
+        
+        # Add title
+        title = self.arguments[0] if self.arguments else 'TODO'
+        title_node = nodes.title(text=title)
+        todo_node.append(title_node)
+        
+        # Add content
+        self.state.nested_parse(self.content, self.content_offset, todo_node)
+        
+        # Add priority if specified
+        if 'priority' in self.options:
+            priority = self.options['priority']
+            todo_node['classes'].append(f'priority-{priority}')
+        
+        return [todo_node]
+
+def setup(app):
+    app.add_directive('todo', TodoDirective)
+    app.add_css_file('todo.css')
+    
+    return {
+        'version': '0.1',
+        'parallel_read_safe': True,
+        'parallel_write_safe': True,
+    }
+```
+
+### API Documentation Templates
+
+```python
+# _templates/autosummary/class.rst
+{{ fullname | escape | underline}}
+
+.. currentmodule:: {{ module }}
+
+.. autoclass:: {{ objname }}
+   :members:
+   :show-inheritance:
+   :inherited-members:
+   :special-members: __init__, __str__, __repr__
+
+   {% block methods %}
+   .. rubric:: {{ _('Methods') }}
+
+   .. autosummary::
+      :nosignatures:
+   {% for item in methods %}
+      ~{{ name }}.{{ item }}
+   {%- endfor %}
+   {% endblock %}
+
+   {% block attributes %}
+   {% if attributes %}
+   .. rubric:: {{ _('Attributes') }}
+
+   .. autosummary::
+   {% for item in attributes %}
+      ~{{ name }}.{{ item }}
+   {%- endfor %}
+   {% endif %}
+   {% endblock %}
+```
+
+### Internationalization
+
+```python
+# conf.py additions for i18n
+locale_dirs = ['locale/']
+gettext_compact = False
+language = 'en'
+
+# Build translations
+# sphinx-build -b gettext . _build/gettext
+# sphinx-intl update -p _build/gettext -l de -l es
+# sphinx-build -b html -D language=de . _build/html/de
+```
+
+## Build Automation
+
+### Makefile Enhancements
+
+```makefile
+# Makefile
+SPHINXOPTS    ?= -W --keep-going
+SPHINXBUILD   ?= sphinx-build
+SOURCEDIR     = source
+BUILDDIR      = build
+
+.PHONY: help clean html pdf epub json
+
+help:
+	@$(SPHINXBUILD) -M help "$(SOURCEDIR)" "$(BUILDDIR)" $(SPHINXOPTS) $(O)
+
+clean:
+	rm -rf $(BUILDDIR)/*
+	find . -name "*.pyc" -delete
+	find . -name "__pycache__" -delete
+
+html:
+	@$(SPHINXBUILD) -M html "$(SOURCEDIR)" "$(BUILDDIR)" $(SPHINXOPTS) $(O)
+	@echo "Build finished. HTML pages are in $(BUILDDIR)/html."
+
+pdf:
+	@$(SPHINXBUILD) -M latexpdf "$(SOURCEDIR)" "$(BUILDDIR)" $(SPHINXOPTS) $(O)
+	@echo "Build finished. PDF is in $(BUILDDIR)/latex."
+
+epub:
+	@$(SPHINXBUILD) -M epub "$(SOURCEDIR)" "$(BUILDDIR)" $(SPHINXOPTS) $(O)
+	@echo "Build finished. EPUB is in $(BUILDDIR)/epub."
+
+json:
+	@$(SPHINXBUILD) -M json "$(SOURCEDIR)" "$(BUILDDIR)" $(SPHINXOPTS) $(O)
+	@echo "Build finished. JSON files are in $(BUILDDIR)/json."
+
+livehtml:
+	sphinx-autobuild "$(SOURCEDIR)" "$(BUILDDIR)/html" $(SPHINXOPTS) $(O) \
+		--ignore "*.swp" \
+		--ignore "*.pyc" \
+		--ignore "__pycache__"
+
+linkcheck:
+	@$(SPHINXBUILD) -M linkcheck "$(SOURCEDIR)" "$(BUILDDIR)" $(SPHINXOPTS) $(O)
+
+coverage:
+	@$(SPHINXBUILD) -M coverage "$(SOURCEDIR)" "$(BUILDDIR)" $(SPHINXOPTS) $(O)
+	@echo "Coverage report is in $(BUILDDIR)/coverage."
+```
+
+### GitHub Actions CI/CD
+
+```yaml
+# .github/workflows/docs.yml
+name: Documentation
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.x'
+    
+    - name: Install dependencies
+      run: |
+        pip install -r docs/requirements.txt
+        pip install -e .
+    
+    - name: Build documentation
+      run: |
+        cd docs
+        make clean
+        make html SPHINXOPTS="-W --keep-going"
+    
+    - name: Check links
+      run: |
+        cd docs
+        make linkcheck
+    
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v3
+      with:
+        name: html-docs
+        path: docs/build/html/
+    
+    - name: Deploy to GitHub Pages
+      if: github.ref == 'refs/heads/main'
+      uses: peaceiris/actions-gh-pages@v3
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        publish_dir: ./docs/build/html
+```
+
+## Custom Themes
+
+### Theme Customization
+
+```css
+/* _static/custom.css */
+/* Custom RTD theme overrides */
+
+/* Increase content width */
+.wy-nav-content {
+    max-width: 1200px !important;
+}
+
+/* Custom admonition styles */
+.admonition.todo {
+    background-color: #fff3cd;
+    border-color: #ffeaa7;
+}
+
+.admonition.todo .admonition-title {
+    background-color: #ffc107;
+    color: #212529;
+}
+
+/* Priority indicators */
+.priority-high {
+    border-left: 5px solid #dc3545 !important;
+}
+
+.priority-medium {
+    border-left: 5px solid #ffc107 !important;
+}
+
+.priority-low {
+    border-left: 5px solid #28a745 !important;
+}
+
+/* Code block enhancements */
+.highlight {
+    background: #f8f8f8;
+    border: 1px solid #e1e4e8;
+    border-radius: 6px;
+    margin: 1em 0;
+}
+
+/* API documentation styling */
+.class .method {
+    margin-left: 20px;
+    border-left: 3px solid #e1e4e8;
+    padding-left: 10px;
+}
+
+/* Responsive tables */
+.wy-table-responsive table {
+    margin-bottom: 24px;
+}
+
+.wy-table-responsive table td,
+.wy-table-responsive table th {
+    white-space: normal;
+}
+```
+
+## Search Enhancement
+
+### Search Configuration
+
+```python
+# conf.py
+html_search_language = 'en'
+html_search_options = {
+    'type': 'default',
+    'includehidden': True,
+}
+
+# For better search with Algolia DocSearch
+# html_js_files = [
+#     ('https://cdn.jsdelivr.net/npm/docsearch.js@2/dist/cdn/docsearch.min.js', {'defer': 'defer'}),
+#     ('searchconfig.js', {'defer': 'defer'}),
+# ]
+```
+
+## Best Practices
+
+### Do's
+- Write comprehensive docstrings in your code
+- Use semantic markup for better structure
+- Include code examples and tutorials
+- Keep documentation close to code
+- Use version control for documentation
+- Test documentation builds in CI/CD
+- Include API examples with expected output
+- Use cross-references liberally
+
+### Don'ts
+- Don't use hard-coded paths
+- Don't ignore build warnings
+- Don't mix tabs and spaces in RST
+- Don't use excessive nesting in toctrees
+- Don't forget to update documentation
+- Don't use screenshots for code
+- Don't skip proofreading
+
+This comprehensive guide ensures professional technical documentation with Sphinx.
+
+- Configure multiple output formats (HTML, PDF, EPUB) for diverse documentation needs.
+- Use internationalization features for multi-language documentation support.
+- Integrate with version control and CI/CD for automated documentation deployment.

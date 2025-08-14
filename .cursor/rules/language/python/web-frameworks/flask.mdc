@@ -1,0 +1,937 @@
+---
+description: Flask web framework best practices for building lightweight Python web applications
+globs: ["app.py", "application.py", "wsgi.py", "**/flask_app/**", "**/blueprints/**"]
+alwaysApply: false
+---
+
+# Flask Web Framework Best Practices
+
+## Overview
+
+Flask is a lightweight WSGI web application framework designed to make getting started quick and easy, with the ability to scale up to complex applications. This guide covers best practices for building maintainable Flask applications.
+
+## Core Principles
+
+- Use Flask for lightweight web applications and microservices with minimal overhead
+- Follow Flask's request-response cycle and application context patterns
+- Implement proper routing with blueprints for modular application structure
+- Use Flask-WTF for secure form handling and CSRF protection
+- Leverage Flask extensions for common functionality (SQLAlchemy, Login, etc.)
+- Implement proper error handling with custom error pages and logging
+- Use Jinja2 templating effectively with template inheritance
+- Structure applications with blueprints and application factories
+- Implement secure session management and authentication
+- Follow Flask security best practices for production deployment
+
+## Application Structure
+
+### Basic Application Factory
+
+```python
+from flask import Flask
+from flask_sqlalchemy import SQLAlchemy
+from flask_migrate import Migrate
+from flask_login import LoginManager
+from flask_wtf.csrf import CSRFProtect
+import logging
+from logging.handlers import RotatingFileHandler
+import os
+
+# Initialize extensions
+db = SQLAlchemy()
+migrate = Migrate()
+login_manager = LoginManager()
+csrf = CSRFProtect()
+
+def create_app(config_name='development'):
+    """Application factory pattern"""
+    app = Flask(__name__)
+    
+    # Load configuration
+    app.config.from_object(f'config.{config_name}')
+    
+    # Initialize extensions
+    db.init_app(app)
+    migrate.init_app(app, db)
+    login_manager.init_app(app)
+    csrf.init_app(app)
+    
+    # Configure login manager
+    login_manager.login_view = 'auth.login'
+    login_manager.login_message = 'Please log in to access this page.'
+    
+    # Register blueprints
+    from app.main import main_bp
+    app.register_blueprint(main_bp)
+    
+    from app.auth import auth_bp
+    app.register_blueprint(auth_bp, url_prefix='/auth')
+    
+    from app.api import api_bp
+    app.register_blueprint(api_bp, url_prefix='/api/v1')
+    
+    # Configure logging
+    if not app.debug and not app.testing:
+        if not os.path.exists('logs'):
+            os.mkdir('logs')
+        file_handler = RotatingFileHandler(
+            'logs/app.log', 
+            maxBytes=10240000, 
+            backupCount=10
+        )
+        file_handler.setFormatter(logging.Formatter(
+            '%(asctime)s %(levelname)s: %(message)s [in %(pathname)s:%(lineno)d]'
+        ))
+        file_handler.setLevel(logging.INFO)
+        app.logger.addHandler(file_handler)
+        app.logger.setLevel(logging.INFO)
+        app.logger.info('Application startup')
+    
+    return app
+```
+
+### Configuration Management
+
+```python
+# config.py
+import os
+from datetime import timedelta
+
+class Config:
+    """Base configuration"""
+    SECRET_KEY = os.environ.get('SECRET_KEY') or 'hard-to-guess-string'
+    SQLALCHEMY_TRACK_MODIFICATIONS = False
+    SQLALCHEMY_RECORD_QUERIES = True
+    
+    # Security
+    SESSION_COOKIE_SECURE = True
+    SESSION_COOKIE_HTTPONLY = True
+    SESSION_COOKIE_SAMESITE = 'Lax'
+    PERMANENT_SESSION_LIFETIME = timedelta(hours=24)
+    
+    # CSRF
+    WTF_CSRF_TIME_LIMIT = None
+    WTF_CSRF_SSL_STRICT = True
+    
+    # File uploads
+    MAX_CONTENT_LENGTH = 16 * 1024 * 1024  # 16MB
+    UPLOAD_FOLDER = 'uploads'
+    ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'pdf'}
+    
+    @staticmethod
+    def init_app(app):
+        pass
+
+class DevelopmentConfig(Config):
+    """Development configuration"""
+    DEBUG = True
+    SQLALCHEMY_DATABASE_URI = os.environ.get('DEV_DATABASE_URL') or \
+        'sqlite:///dev.db'
+    
+    # Development-specific settings
+    SESSION_COOKIE_SECURE = False
+    WTF_CSRF_SSL_STRICT = False
+
+class ProductionConfig(Config):
+    """Production configuration"""
+    SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL') or \
+        'postgresql://user:pass@localhost/dbname'
+    
+    # Production security headers
+    SECURITY_HEADERS = {
+        'Strict-Transport-Security': 'max-age=31536000; includeSubDomains',
+        'X-Content-Type-Options': 'nosniff',
+        'X-Frame-Options': 'DENY',
+        'X-XSS-Protection': '1; mode=block',
+        'Content-Security-Policy': "default-src 'self'"
+    }
+    
+    @classmethod
+    def init_app(cls, app):
+        Config.init_app(app)
+        
+        # Add security headers
+        @app.after_request
+        def add_security_headers(response):
+            for header, value in cls.SECURITY_HEADERS.items():
+                response.headers[header] = value
+            return response
+
+config = {
+    'development': DevelopmentConfig,
+    'production': ProductionConfig,
+    'default': DevelopmentConfig
+}
+```
+
+## Blueprints and Routing
+
+### Blueprint Structure
+
+```python
+# app/main/__init__.py
+from flask import Blueprint
+
+main_bp = Blueprint('main', __name__)
+
+from . import views, errors
+
+# app/main/views.py
+from flask import render_template, request, jsonify, current_app
+from . import main_bp
+from app.models import Post
+from app.decorators import cache_response
+
+@main_bp.route('/')
+@main_bp.route('/index')
+@cache_response(timeout=300)
+def index():
+    """Home page with pagination"""
+    page = request.args.get('page', 1, type=int)
+    posts = Post.query.order_by(Post.created_at.desc()).paginate(
+        page=page, 
+        per_page=current_app.config.get('POSTS_PER_PAGE', 10),
+        error_out=False
+    )
+    return render_template('index.html', posts=posts)
+
+@main_bp.route('/post/<int:id>')
+def post_detail(id):
+    """Individual post page"""
+    post = Post.query.get_or_404(id)
+    return render_template('post.html', post=post)
+
+# RESTful routes
+@main_bp.route('/api/posts', methods=['GET'])
+def get_posts():
+    """API endpoint for posts"""
+    posts = Post.query.all()
+    return jsonify([post.to_dict() for post in posts])
+
+@main_bp.route('/api/posts', methods=['POST'])
+@login_required
+def create_post():
+    """Create new post"""
+    data = request.get_json()
+    
+    # Validate data
+    if not data or 'title' not in data or 'content' not in data:
+        return jsonify({'error': 'Missing required fields'}), 400
+    
+    post = Post(
+        title=data['title'],
+        content=data['content'],
+        author=current_user
+    )
+    db.session.add(post)
+    db.session.commit()
+    
+    return jsonify(post.to_dict()), 201
+```
+
+### Error Handling
+
+```python
+# app/main/errors.py
+from flask import render_template, jsonify, request
+from . import main_bp
+from app import db
+
+@main_bp.app_errorhandler(404)
+def not_found_error(error):
+    """Handle 404 errors"""
+    if request.path.startswith('/api/'):
+        return jsonify({'error': 'Resource not found'}), 404
+    return render_template('errors/404.html'), 404
+
+@main_bp.app_errorhandler(500)
+def internal_error(error):
+    """Handle 500 errors"""
+    db.session.rollback()
+    if request.path.startswith('/api/'):
+        return jsonify({'error': 'Internal server error'}), 500
+    return render_template('errors/500.html'), 500
+
+@main_bp.app_errorhandler(Exception)
+def handle_unexpected_error(error):
+    """Handle unexpected errors"""
+    current_app.logger.error(f'Unexpected error: {error}')
+    db.session.rollback()
+    if request.path.startswith('/api/'):
+        return jsonify({'error': 'An unexpected error occurred'}), 500
+    return render_template('errors/500.html'), 500
+```
+
+## Forms and Validation
+
+### Flask-WTF Forms
+
+```python
+# app/forms.py
+from flask_wtf import FlaskForm
+from flask_wtf.file import FileField, FileAllowed
+from wtforms import StringField, TextAreaField, PasswordField, BooleanField, SelectField
+from wtforms.validators import DataRequired, Email, Length, EqualTo, ValidationError
+from app.models import User
+
+class RegistrationForm(FlaskForm):
+    """User registration form"""
+    username = StringField('Username', 
+        validators=[
+            DataRequired(), 
+            Length(min=3, max=20)
+        ])
+    email = StringField('Email', 
+        validators=[
+            DataRequired(), 
+            Email()
+        ])
+    password = PasswordField('Password', 
+        validators=[
+            DataRequired(),
+            Length(min=8)
+        ])
+    confirm_password = PasswordField('Confirm Password',
+        validators=[
+            DataRequired(),
+            EqualTo('password')
+        ])
+    submit = SubmitField('Sign Up')
+    
+    def validate_username(self, username):
+        """Check if username already exists"""
+        user = User.query.filter_by(username=username.data).first()
+        if user:
+            raise ValidationError('Username already taken')
+    
+    def validate_email(self, email):
+        """Check if email already exists"""
+        user = User.query.filter_by(email=email.data).first()
+        if user:
+            raise ValidationError('Email already registered')
+
+class PostForm(FlaskForm):
+    """Blog post form"""
+    title = StringField('Title', 
+        validators=[
+            DataRequired(), 
+            Length(max=200)
+        ])
+    content = TextAreaField('Content', 
+        validators=[DataRequired()])
+    category = SelectField('Category', 
+        choices=[
+            ('general', 'General'),
+            ('tech', 'Technology'),
+            ('news', 'News')
+        ])
+    image = FileField('Featured Image', 
+        validators=[
+            FileAllowed(['jpg', 'png', 'gif'], 'Images only!')
+        ])
+    publish = BooleanField('Publish immediately')
+```
+
+### Form Handling View
+
+```python
+# app/main/views.py
+from flask import render_template, redirect, url_for, flash, request
+from flask_login import login_required, current_user
+from app.forms import PostForm
+from app.models import Post
+from app.utils import save_picture
+
+@main_bp.route('/post/new', methods=['GET', 'POST'])
+@login_required
+def new_post():
+    """Create new post"""
+    form = PostForm()
+    
+    if form.validate_on_submit():
+        # Handle file upload
+        image_file = None
+        if form.image.data:
+            image_file = save_picture(form.image.data, 'posts')
+        
+        # Create post
+        post = Post(
+            title=form.title.data,
+            content=form.content.data,
+            category=form.category.data,
+            image=image_file,
+            author=current_user,
+            published=form.publish.data
+        )
+        
+        db.session.add(post)
+        db.session.commit()
+        
+        flash('Your post has been created!', 'success')
+        return redirect(url_for('main.post_detail', id=post.id))
+    
+    return render_template('create_post.html', form=form, title='New Post')
+
+@main_bp.route('/post/<int:id>/edit', methods=['GET', 'POST'])
+@login_required
+def edit_post(id):
+    """Edit existing post"""
+    post = Post.query.get_or_404(id)
+    
+    # Check permission
+    if post.author != current_user:
+        abort(403)
+    
+    form = PostForm()
+    
+    if form.validate_on_submit():
+        post.title = form.title.data
+        post.content = form.content.data
+        post.category = form.category.data
+        
+        if form.image.data:
+            # Delete old image
+            if post.image:
+                delete_picture(post.image, 'posts')
+            post.image = save_picture(form.image.data, 'posts')
+        
+        db.session.commit()
+        flash('Your post has been updated!', 'success')
+        return redirect(url_for('main.post_detail', id=post.id))
+    
+    elif request.method == 'GET':
+        # Populate form with existing data
+        form.title.data = post.title
+        form.content.data = post.content
+        form.category.data = post.category
+        form.publish.data = post.published
+    
+    return render_template('edit_post.html', form=form, title='Edit Post')
+```
+
+## Database Models
+
+### SQLAlchemy Models
+
+```python
+# app/models.py
+from datetime import datetime
+from werkzeug.security import generate_password_hash, check_password_hash
+from flask_login import UserMixin
+from app import db, login_manager
+
+class User(UserMixin, db.Model):
+    """User model"""
+    __tablename__ = 'users'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    username = db.Column(db.String(20), unique=True, nullable=False, index=True)
+    email = db.Column(db.String(120), unique=True, nullable=False, index=True)
+    password_hash = db.Column(db.String(128))
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    last_seen = db.Column(db.DateTime, default=datetime.utcnow)
+    is_active = db.Column(db.Boolean, default=True)
+    is_admin = db.Column(db.Boolean, default=False)
+    
+    # Relationships
+    posts = db.relationship('Post', backref='author', lazy='dynamic',
+                          cascade='all, delete-orphan')
+    
+    def set_password(self, password):
+        """Hash and set password"""
+        self.password_hash = generate_password_hash(password)
+    
+    def check_password(self, password):
+        """Check password against hash"""
+        return check_password_hash(self.password_hash, password)
+    
+    def to_dict(self, include_email=False):
+        """Convert to dictionary for API responses"""
+        data = {
+            'id': self.id,
+            'username': self.username,
+            'created_at': self.created_at.isoformat(),
+            'last_seen': self.last_seen.isoformat(),
+            'post_count': self.posts.count()
+        }
+        if include_email:
+            data['email'] = self.email
+        return data
+
+@login_manager.user_loader
+def load_user(user_id):
+    """Load user for Flask-Login"""
+    return User.query.get(int(user_id))
+
+class Post(db.Model):
+    """Blog post model"""
+    __tablename__ = 'posts'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    title = db.Column(db.String(200), nullable=False)
+    slug = db.Column(db.String(200), unique=True, index=True)
+    content = db.Column(db.Text, nullable=False)
+    category = db.Column(db.String(50))
+    image = db.Column(db.String(100))
+    published = db.Column(db.Boolean, default=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow, index=True)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # Foreign keys
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    
+    # Relationships
+    comments = db.relationship('Comment', backref='post', lazy='dynamic',
+                             cascade='all, delete-orphan')
+    
+    def __init__(self, **kwargs):
+        super(Post, self).__init__(**kwargs)
+        if self.slug is None:
+            self.slug = self.generate_slug()
+    
+    def generate_slug(self):
+        """Generate URL-friendly slug from title"""
+        from slugify import slugify
+        base_slug = slugify(self.title)
+        slug = base_slug
+        num = 1
+        
+        while Post.query.filter_by(slug=slug).first():
+            slug = f"{base_slug}-{num}"
+            num += 1
+        
+        return slug
+    
+    def to_dict(self):
+        """Convert to dictionary for API responses"""
+        return {
+            'id': self.id,
+            'title': self.title,
+            'slug': self.slug,
+            'content': self.content,
+            'category': self.category,
+            'image': self.image,
+            'published': self.published,
+            'created_at': self.created_at.isoformat(),
+            'updated_at': self.updated_at.isoformat(),
+            'author': self.author.username,
+            'comment_count': self.comments.count()
+        }
+```
+
+## Authentication
+
+### Flask-Login Integration
+
+```python
+# app/auth/views.py
+from flask import render_template, redirect, url_for, flash, request
+from flask_login import login_user, logout_user, current_user
+from werkzeug.urls import url_parse
+from app import db
+from app.auth import auth_bp
+from app.auth.forms import LoginForm, RegistrationForm
+from app.models import User
+
+@auth_bp.route('/login', methods=['GET', 'POST'])
+def login():
+    """User login"""
+    if current_user.is_authenticated:
+        return redirect(url_for('main.index'))
+    
+    form = LoginForm()
+    if form.validate_on_submit():
+        user = User.query.filter_by(username=form.username.data).first()
+        
+        if user is None or not user.check_password(form.password.data):
+            flash('Invalid username or password', 'danger')
+            return redirect(url_for('auth.login'))
+        
+        if not user.is_active:
+            flash('Your account has been deactivated', 'warning')
+            return redirect(url_for('auth.login'))
+        
+        login_user(user, remember=form.remember_me.data)
+        
+        # Update last seen
+        user.last_seen = datetime.utcnow()
+        db.session.commit()
+        
+        # Redirect to next page or home
+        next_page = request.args.get('next')
+        if not next_page or url_parse(next_page).netloc != '':
+            next_page = url_for('main.index')
+        
+        return redirect(next_page)
+    
+    return render_template('auth/login.html', form=form, title='Sign In')
+
+@auth_bp.route('/logout')
+def logout():
+    """User logout"""
+    logout_user()
+    flash('You have been logged out', 'info')
+    return redirect(url_for('main.index'))
+
+@auth_bp.route('/register', methods=['GET', 'POST'])
+def register():
+    """User registration"""
+    if current_user.is_authenticated:
+        return redirect(url_for('main.index'))
+    
+    form = RegistrationForm()
+    if form.validate_on_submit():
+        user = User(
+            username=form.username.data,
+            email=form.email.data
+        )
+        user.set_password(form.password.data)
+        
+        db.session.add(user)
+        db.session.commit()
+        
+        flash('Registration successful! Please log in.', 'success')
+        return redirect(url_for('auth.login'))
+    
+    return render_template('auth/register.html', form=form, title='Register')
+```
+
+## Templates and Jinja2
+
+### Base Template with Security
+
+```html
+<!-- templates/base.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    
+    <!-- CSRF Token -->
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+    
+    <title>{% block title %}Flask App{% endblock %}</title>
+    
+    <!-- Styles -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    {% block styles %}{% endblock %}
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="container">
+            <a href="{{ url_for('main.index') }}" class="brand">Flask App</a>
+            
+            <ul class="nav-menu">
+                {% if current_user.is_authenticated %}
+                    <li>
+                        <a href="{{ url_for('main.new_post') }}">New Post</a>
+                    </li>
+                    <li>
+                        <a href="{{ url_for('auth.logout') }}">Logout</a>
+                    </li>
+                {% else %}
+                    <li>
+                        <a href="{{ url_for('auth.login') }}">Login</a>
+                    </li>
+                    <li>
+                        <a href="{{ url_for('auth.register') }}">Register</a>
+                    </li>
+                {% endif %}
+            </ul>
+        </div>
+    </nav>
+    
+    <!-- Flash Messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            <div class="container">
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }}">
+                        {{ message }}
+                        <button class="close" onclick="this.parentElement.remove()">×</button>
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+    {% endwith %}
+    
+    <!-- Main Content -->
+    <main class="container">
+        {% block content %}{% endblock %}
+    </main>
+    
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <p>&copy; {{ moment().format('YYYY') }} Flask App. All rights reserved.</p>
+        </div>
+    </footer>
+    
+    <!-- Scripts -->
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    {% block scripts %}{% endblock %}
+</body>
+</html>
+```
+
+## API Development
+
+### RESTful API with Flask
+
+```python
+# app/api/views.py
+from flask import jsonify, request, url_for, g
+from flask_httpauth import HTTPBasicAuth, HTTPTokenAuth
+from app import db
+from app.api import api_bp
+from app.models import User, Post
+from app.api.errors import bad_request, error_response
+from app.decorators import json_required
+
+# Authentication
+basic_auth = HTTPBasicAuth()
+token_auth = HTTPTokenAuth()
+
+@basic_auth.verify_password
+def verify_password(username, password):
+    """Verify user credentials"""
+    user = User.query.filter_by(username=username).first()
+    if user and user.check_password(password):
+        g.current_user = user
+        return True
+    return False
+
+@token_auth.verify_token
+def verify_token(token):
+    """Verify authentication token"""
+    user = User.check_auth_token(token) if token else None
+    if user:
+        g.current_user = user
+        return True
+    return False
+
+# API Routes
+@api_bp.route('/users/<int:id>')
+@token_auth.login_required
+def get_user(id):
+    """Get user by ID"""
+    user = User.query.get_or_404(id)
+    include_email = g.current_user == user or g.current_user.is_admin
+    return jsonify(user.to_dict(include_email=include_email))
+
+@api_bp.route('/users', methods=['POST'])
+@json_required
+def create_user():
+    """Create new user"""
+    data = request.get_json()
+    
+    # Validate required fields
+    required_fields = ['username', 'email', 'password']
+    for field in required_fields:
+        if field not in data:
+            return bad_request(f'Missing field: {field}')
+    
+    # Check if user exists
+    if User.query.filter_by(username=data['username']).first():
+        return bad_request('Username already exists')
+    if User.query.filter_by(email=data['email']).first():
+        return bad_request('Email already registered')
+    
+    # Create user
+    user = User(
+        username=data['username'],
+        email=data['email']
+    )
+    user.set_password(data['password'])
+    
+    db.session.add(user)
+    db.session.commit()
+    
+    response = jsonify(user.to_dict())
+    response.status_code = 201
+    response.headers['Location'] = url_for('api.get_user', id=user.id)
+    
+    return response
+
+@api_bp.route('/posts')
+@token_auth.login_required
+def get_posts():
+    """Get paginated posts"""
+    page = request.args.get('page', 1, type=int)
+    per_page = min(request.args.get('per_page', 10, type=int), 100)
+    
+    posts = Post.query.filter_by(published=True).order_by(
+        Post.created_at.desc()
+    ).paginate(page=page, per_page=per_page, error_out=False)
+    
+    return jsonify({
+        'posts': [post.to_dict() for post in posts.items],
+        'total': posts.total,
+        'pages': posts.pages,
+        'page': page,
+        'per_page': per_page,
+        'has_prev': posts.has_prev,
+        'has_next': posts.has_next,
+        'prev_url': url_for('api.get_posts', page=posts.prev_num, per_page=per_page) if posts.has_prev else None,
+        'next_url': url_for('api.get_posts', page=posts.next_num, per_page=per_page) if posts.has_next else None
+    })
+```
+
+## Testing
+
+### Flask Testing
+
+```python
+# tests/test_app.py
+import unittest
+from flask import url_for
+from app import create_app, db
+from app.models import User, Post
+
+class FlaskAppTestCase(unittest.TestCase):
+    """Test case for Flask application"""
+    
+    def setUp(self):
+        """Set up test environment"""
+        self.app = create_app('testing')
+        self.app_context = self.app.app_context()
+        self.app_context.push()
+        self.client = self.app.test_client()
+        db.create_all()
+        
+        # Create test user
+        self.user = User(username='testuser', email='test@example.com')
+        self.user.set_password('password')
+        db.session.add(self.user)
+        db.session.commit()
+    
+    def tearDown(self):
+        """Clean up after tests"""
+        db.session.remove()
+        db.drop_all()
+        self.app_context.pop()
+    
+    def test_home_page(self):
+        """Test home page loads"""
+        response = self.client.get('/')
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(b'Flask App', response.data)
+    
+    def test_login(self):
+        """Test user login"""
+        response = self.client.post('/auth/login', data={
+            'username': 'testuser',
+            'password': 'password',
+            'remember_me': False
+        }, follow_redirects=True)
+        
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(b'Welcome', response.data)
+    
+    def test_api_authentication(self):
+        """Test API authentication"""
+        # Without auth
+        response = self.client.get('/api/v1/posts')
+        self.assertEqual(response.status_code, 401)
+        
+        # With auth
+        response = self.client.get(
+            '/api/v1/posts',
+            headers=self.get_api_headers('testuser', 'password')
+        )
+        self.assertEqual(response.status_code, 200)
+    
+    def get_api_headers(self, username, password):
+        """Get headers for API authentication"""
+        from base64 import b64encode
+        return {
+            'Authorization': 'Basic ' + b64encode(
+                f'{username}:{password}'.encode('utf-8')
+            ).decode('utf-8'),
+            'Accept': 'application/json',
+            'Content-Type': 'application/json'
+        }
+```
+
+## Production Deployment
+
+### Gunicorn Configuration
+
+```python
+# gunicorn_config.py
+import multiprocessing
+import os
+
+bind = f"0.0.0.0:{os.environ.get('PORT', 8000)}"
+workers = multiprocessing.cpu_count() * 2 + 1
+worker_class = 'sync'
+worker_connections = 1000
+keepalive = 5
+max_requests = 1000
+max_requests_jitter = 50
+preload_app = True
+
+# Logging
+accesslog = '-'
+errorlog = '-'
+loglevel = 'info'
+
+# Security
+limit_request_line = 4094
+limit_request_fields = 100
+limit_request_field_size = 8190
+```
+
+### Deployment Script
+
+```python
+# deploy.py
+#!/usr/bin/env python
+import os
+import sys
+from flask_migrate import upgrade
+from app import create_app, db
+
+def deploy():
+    """Run deployment tasks"""
+    app = create_app(os.environ.get('FLASK_CONFIG', 'production'))
+    
+    with app.app_context():
+        # Run database migrations
+        upgrade()
+        
+        # Create required directories
+        for directory in ['logs', 'uploads']:
+            if not os.path.exists(directory):
+                os.makedirs(directory)
+        
+        print("Deployment completed successfully!")
+
+if __name__ == '__main__':
+    deploy()
+```
+
+## Best Practices
+
+### Do's
+- Use application factory pattern for flexibility
+- Implement proper error handling and logging
+- Use blueprints for modular application structure
+- Validate all user input with Flask-WTF
+- Use environment variables for sensitive configuration
+- Implement proper CSRF protection
+- Use Flask-Migrate for database migrations
+- Write comprehensive tests for all routes
+
+### Don'ts
+- Don't store sensitive data in cookies
+- Don't use Flask development server in production
+- Don't disable CSRF protection
+- Don't commit secret keys to version control
+- Don't use mutable default arguments in view functions
+- Don't forget to handle database session cleanup
+
+This comprehensive guide ensures effective Flask development following security and scalability best practices.

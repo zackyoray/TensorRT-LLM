@@ -1,0 +1,157 @@
+---
+description: "Strict guidelines for Java code quality, reliability, security, and maintainability, aligning with SonarQube's default Quality Profile principles. These rules are fundamental for all Java source code."
+alwaysApply: true
+globs: ["src/main/java/**/*.java"]
+---
+
+# SonarQube-Aligned Java Code Quality Rules
+
+This rule set provides directives for AI tools to ensure generated and refactored Java code adheres to high standards of quality, reliability, security, and maintainability, reflecting principles found in SonarQube's default Quality Profile.
+
+## 1. Reliability & Bug Prevention
+
+-   **Null-Safety:**
+    -   Always perform null checks before dereferencing potentially null objects.
+    -   Prefer `java.util.Optional` for methods that might return no value, and use its functional APIs (`map`, `flatMap`, `orElse`, `orElseThrow`) instead of `isPresent()` followed by `get()`.
+    -   Avoid returning `null` from collections or `Optional` methods; return empty collections or `Optional.empty()` instead.
+-   **Exception Handling:**
+    -   **Avoid catching generic `java.lang.Exception` or `java.lang.Throwable`** unless re-throwing or for very specific, top-level error handling. Catch specific exception types.
+    -   **Never use empty `catch` blocks.** If an exception is intentionally ignored, provide a detailed comment explaining the rationale.
+    -   Always log exceptions at an appropriate level (e.g., `ERROR`) when they are caught and not re-thrown. Include the full stack trace.
+    -   Do not throw `Exception` or `Throwable` from `finally` blocks.
+    -   Ensure that resources (e.g., `InputStream`, `OutputStream`, `Connection`, `Statement`, `ResultSet`) are always closed, ideally using **try-with-resources** statements.
+-   **Concurrency & Thread Safety:**
+    -   Ensure that shared mutable state is properly synchronized (e.g., using `synchronized` blocks/methods, `java.util.concurrent.locks`, or thread-safe collections like `ConcurrentHashMap`).
+    -   Avoid common race conditions by carefully managing access to shared resources.
+    -   Do not use `Thread.sleep()` for synchronization or to fix race conditions.
+-   **Comparison:**
+    -   Use `Objects.equals()` for comparing objects to avoid `NullPointerExceptions`.
+    -   Use `equals()` for object comparison, not `==`, unless comparing primitive types or checking for object identity.
+
+## 2. Security Vulnerabilities
+
+-   **Input Validation:**
+    -   Always validate all external inputs (from HTTP requests, files, environment variables, etc.) to prevent injection attacks (SQL, command, XSS) and other vulnerabilities.
+    -   Use Bean Validation (`@Valid`, `@NotNull`, `@Size`, etc.) for DTOs and method parameters.
+-   **Sensitive Data:**
+    -   **Never log sensitive information** (passwords, API keys, PII, credit card numbers) to logs.
+    -   Avoid hardcoding credentials or sensitive configuration directly in code. Use externalized configuration (e.g., Spring Boot's `application.properties`/`yml`, environment variables, Vault).
+-   **SQL Injection:**
+    -   When interacting with databases, always use **prepared statements** or Spring Data JPA/JDBC Template with parameter binding. Never concatenate user input directly into SQL queries.
+-   **Cross-Site Scripting (XSS):**
+    -   Ensure all user-generated content rendered in web pages is properly escaped or sanitized.
+
+## 3. Maintainability & Code Smells
+
+-   **Code Duplication (DRY):**
+    -   **Strictly avoid code duplication.** Identify repetitive code blocks and refactor them into reusable methods, classes, or common utility components.
+    -   If a block of code appears in three or more places, it should be extracted.
+-   **Complexity:**
+    -   **Keep methods and classes small and focused.** A method should ideally do one thing and do it well.
+    -   Limit the cyclomatic complexity of methods. If a method becomes too complex (many `if`, `else`, `for`, `while`, `switch` statements), suggest refactoring it.
+    -   Avoid deep nesting of `if`/`else` or `for` loops. Use guard clauses/early returns.
+-   **Long Methods/Classes:**
+    -   Suggest breaking down methods exceeding a reasonable line count (e.g., 20-30 lines of active code).
+    -   Suggest breaking down classes with too many responsibilities or lines of code.
+-   **Magic Numbers/Strings:**
+    -   Replace all "magic numbers" (literal numeric values with no obvious meaning) and "magic strings" (literal string values) with named constants.
+-   **Unused Code:**
+    -   Do not generate or leave unused variables, parameters, imports, fields, or methods. Remove dead code.
+-   **Naming Conventions:**
+    -   Adhere strictly to standard Java naming conventions (camelCase for methods/variables, PascalCase for classes, SCREAMING_SNAKE_CASE for constants).
+    -   Use meaningful and descriptive names for all identifiers. Avoid abbreviations unless universally understood.
+-   **Comments & Javadoc:**
+    -   All public classes, interfaces, methods, and fields **must** have Javadoc comments explaining their purpose, parameters, and return values.
+    -   Use internal comments to explain *why* complex or non-obvious code is written, not just *what* it does.
+-   **Deep Inheritance Hierarchies:**
+    -   Prefer **composition over inheritance** where appropriate, especially for adding behavior. Avoid very deep class hierarchies.
+-   **Mutable Static Fields:**
+    -   Avoid mutable static fields, as they can lead to concurrency issues and make testing difficult. If necessary, ensure they are properly synchronized.
+-   **Return Empty Collections:**
+    -   Methods returning collections should return an empty collection (e.g., `Collections.emptyList()`) rather than `null` when no elements are present.
+
+## 4. Performance Considerations
+
+-   **String Concatenation:**
+    -   When concatenating strings in a loop or in performance-critical sections, always use `StringBuilder` or `StringBuffer` instead of `+` operator.
+-   **N+1 Select Problem (JPA/Hibernate):**
+    -   When using ORMs like JPA, be mindful of and suggest strategies to avoid the N+1 select problem (e.g., using `FetchType.EAGER` judiciously, `JOIN FETCH` in JPQL/HQL, `@BatchSize`, or `EntityGraph`).
+-   **Excessive Object Creation:**
+    -   Avoid creating unnecessary objects in performance-critical loops. Reuse objects where appropriate.
+
+<rule>
+  <name>sonarqube_aligned_java_code_quality_rules</name>
+  <description>Strict guidelines for Java code quality, reliability, security, and maintainability, aligning with SonarQube's default Quality Profile principles.</description>
+  <requirements>
+    <!-- Reliability & Bug Prevention -->
+    <requirement priority="critical">
+      <description>Always perform null checks and prefer `java.util.Optional` for null-safety; avoid returning `null` from collections/Optional methods.</description>
+    </requirement>
+    <requirement priority="critical">
+      <description>Avoid catching generic `java.lang.Exception` or `java.lang.Throwable`; never use empty `catch` blocks; always log exceptions with stack traces.</description>
+    </requirement>
+    <requirement priority="high">
+      <description>Ensure resources are always closed using try-with-resources statements.</description>
+    </requirement>
+    <requirement priority="critical">
+      <description>Ensure shared mutable state is properly synchronized to prevent race conditions; avoid `Thread.sleep()` for synchronization.</description>
+    </requirement>
+    <requirement priority="high">
+      <description>Use `Objects.equals()` for comparing objects and `equals()` for object comparison, not `==` (unless for primitives/identity).</description>
+    </requirement>
+    <!-- Security Vulnerabilities -->
+    <requirement priority="critical">
+      <description>Always validate all external inputs to prevent injection attacks (SQL, command, XSS).</description>
+    </requirement>
+    <requirement priority="critical">
+      <description>Never log sensitive information (passwords, API keys, PII) and avoid hardcoding credentials.</description>
+    </requirement>
+    <requirement priority="critical">
+      <description>Always use prepared statements or parameter binding for database interactions to prevent SQL Injection.</description>
+    </requirement>
+    <requirement priority="high">
+      <description>Ensure all user-generated content rendered in web pages is properly escaped or sanitized to prevent XSS.</description>
+    </requirement>
+    <!-- Maintainability & Code Smells -->
+    <requirement priority="critical">
+      <description>Strictly avoid code duplication; refactor repetitive code into reusable components (DRY).</description>
+    </requirement>
+    <requirement priority="critical">
+      <description>Keep methods and classes small and focused; limit cyclomatic complexity; avoid deep nesting.</description>
+    </requirement>
+    <requirement priority="high">
+      <description>Suggest breaking down long methods (e.g., >20-30 lines) and classes with too many responsibilities.</description>
+    </requirement>
+    <requirement priority="medium">
+      <description>Replace "magic numbers" and "magic strings" with named constants.</description>
+    </requirement>
+    <requirement priority="high">
+      <description>Do not generate or leave unused variables, parameters, imports, fields, or methods.</description>
+    </requirement>
+    <requirement priority="critical">
+      <description>Adhere strictly to standard Java naming conventions and use meaningful, descriptive names.</description>
+    </requirement>
+    <requirement priority="critical">
+      <description>All public classes, interfaces, methods, and fields must have Javadoc comments; use internal comments to explain 'why'.</description>
+    </requirement>
+    <requirement priority="medium">
+      <description>Prefer composition over inheritance; avoid very deep class hierarchies.</description>
+    </requirement>
+    <requirement priority="high">
+      <description>Avoid mutable static fields; ensure proper synchronization if necessary.</description>
+    </requirement>
+    <requirement priority="medium">
+      <description>Methods returning collections should return an empty collection rather than `null`.</description>
+    </requirement>
+    <!-- Performance Considerations -->
+    <requirement priority="high">
+      <description>Use `StringBuilder` or `StringBuffer` for string concatenation in loops or performance-critical sections.</description>
+    </requirement>
+    <requirement priority="high">
+      <description>Be mindful of and suggest strategies to avoid the N+1 select problem in JPA/Hibernate.</description>
+    </requirement>
+    <requirement priority="medium">
+      <description>Avoid creating unnecessary objects in performance-critical loops; reuse objects where appropriate.</description>
+    </requirement>
+  </requirements>
+</rule>

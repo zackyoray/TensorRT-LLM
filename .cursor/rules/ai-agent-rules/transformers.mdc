@@ -1,0 +1,103 @@
+---
+alwaysApply: false
+description: Hugging Face Transformers rules for building and deploying transformer-based
+  AI models.
+globs:
+- '*.py'
+---
+
+- Use Hugging Face Transformers for state-of-the-art NLP and multimodal AI models.
+- Select appropriate pre-trained models based on task requirements and resource constraints.
+- Implement proper tokenization and preprocessing pipelines for consistent model inputs.
+- Use pipeline abstractions for common tasks like text classification and generation.
+- Implement proper fine-tuning procedures with appropriate hyperparameters and datasets.
+- Use model parallelism and gradient accumulation for training large models efficiently.
+- Implement proper evaluation metrics and validation strategies for model performance.
+- Use appropriate optimization techniques like LoRA or QLoRA for efficient fine-tuning.
+- Deploy models with proper inference optimization and hardware acceleration.
+- Monitor model performance and implement model versioning for production systems.
+  - [Hugging Face Transformers Documentation](https://huggingface.co/transformers/)
+  - [PyTorch Documentation](https://pytorch.org/docs/stable/index.html)
+  - [MLflow Documentation](https://www.mlflow.org/docs/latest/index.html)
+  - [BERT Fine-Tuning Tutorial with PyTorch](http://www.mccormickml.com)
+
+# Transformers Best Practices
+
+
+## Overview
+
+Hugging Face Transformers rules for building and deploying transformer-based AI models.
+
+
+## Getting Started with Transformers
+
+### Quick Setup
+
+```bash
+# Install Transformers
+npm install transformers
+
+# Create new project
+npx create-transformers-app my-app
+cd my-app
+
+# Start development
+npm run dev
+```
+
+### Basic Component
+
+```javascript
+// components/Example.js
+import { Component } from 'transformers';
+
+export default function Example() {
+    return (
+        <Component>
+            <h1>Hello Transformers!</h1>
+        </Component>
+    );
+}
+```
+
+## Advanced Topics
+
+### Performance Optimization
+
+When working with Transformers, consider these optimization strategies:
+- Cache frequently accessed data
+- Use batch operations where possible
+- Implement connection pooling
+- Monitor resource usage
+- Profile code to identify bottlenecks
+
+### Troubleshooting Guide
+
+Common issues and solutions:
+
+1. **Issue**: Configuration not loading
+   **Solution**: Check file paths and permissions
+
+2. **Issue**: Performance degradation
+   **Solution**: Review logs and increase resource limits
+
+3. **Issue**: Integration failures
+   **Solution**: Verify API versions and compatibility
+
+### Additional Resources
+
+- [Official Documentation](#)
+- [Community Forum](#)
+- [GitHub Repository](#)
+- [Tutorial Videos](#)
+- [Best Practices Guide](#)
+
+### Contributing
+
+Contributions are welcome! Please:
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Submit a pull request
+
+For more details, see CONTRIBUTING.md

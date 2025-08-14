@@ -1,0 +1,542 @@
+# Pdoc API Documentation Best Practices
+
+## Overview
+
+Pdoc is a lightweight Python documentation generator that creates API documentation directly from your Python source code and its docstrings. Unlike Sphinx, pdoc focuses on simplicity and automatic extraction of documentation from your code, making it perfect for API reference documentation.
+
+## Core Principles
+
+- Use pdoc for automatic API documentation generation from Python docstrings
+- Write comprehensive docstrings following Google or NumPy style conventions
+- Include parameter descriptions, return value explanations, and usage examples in docstrings
+- Use proper type hints that integrate with pdoc's documentation generation
+- Organize modules and packages with clear __init__.py documentation
+- Configure pdoc with custom templates and styling for branded documentation
+- Include code examples and usage patterns in module and class docstrings
+- Use pdoc's markdown support for rich text formatting in documentation
+- Generate documentation as part of CI/CD pipeline for up-to-date docs
+- Host generated documentation with proper navigation and search functionality
+
+## Installation and Setup
+
+### Basic Installation
+
+```bash
+# Install pdoc
+pip install pdoc
+
+# Generate documentation for a module
+pdoc --html mymodule
+
+# Generate documentation with hot-reloading server
+pdoc --http localhost:8080 mymodule
+
+# Generate documentation to specific directory
+pdoc --html --output-dir docs mymodule
+```
+
+### Project Configuration
+
+```python
+# pyproject.toml
+[tool.pdoc]
+output-directory = "docs/api"
+format = "html"
+show-source = true
+link-prefix = ""
+template-directory = "docs/templates"
+```
+
+## Writing Effective Docstrings
+
+### Google Style Docstrings
+
+```python
+"""Example module for demonstrating pdoc documentation.
+
+This module shows best practices for writing docstrings that work well
+with pdoc's automatic documentation generation.
+
+Example:
+    Basic usage of this module::
+
+        >>> from mymodule import Calculator
+        >>> calc = Calculator()
+        >>> calc.add(2, 3)
+        5
+
+Note:
+    This module requires Python 3.8 or higher.
+"""
+
+from typing import List, Optional, Union, Dict, Any
+from dataclasses import dataclass
+import logging
+
+logger = logging.getLogger(__name__)
+
+
+class Calculator:
+    """A simple calculator class for basic arithmetic operations.
+    
+    This class provides methods for addition, subtraction, multiplication,
+    and division. It also maintains a history of operations.
+    
+    Attributes:
+        history (List[str]): A list of all operations performed.
+        precision (int): Number of decimal places for results.
+    
+    Example:
+        Creating and using a calculator::
+        
+            >>> calc = Calculator(precision=2)
+            >>> calc.add(10, 5)
+            15
+            >>> calc.multiply(3.14159, 2)
+            6.28
+            >>> calc.history
+            ['10 + 5 = 15', '3.14159 * 2 = 6.28']
+    """
+    
+    def __init__(self, precision: int = 2) -> None:
+        """Initialize the calculator.
+        
+        Args:
+            precision: Number of decimal places for results. Defaults to 2.
+        
+        Raises:
+            ValueError: If precision is negative.
+        """
+        if precision < 0:
+            raise ValueError("Precision must be non-negative")
+        self.precision = precision
+        self.history: List[str] = []
+    
+    def add(self, a: Union[int, float], b: Union[int, float]) -> float:
+        """Add two numbers.
+        
+        Args:
+            a: First number to add.
+            b: Second number to add.
+        
+        Returns:
+            The sum of a and b, rounded to the specified precision.
+        
+        Example:
+            >>> calc = Calculator()
+            >>> calc.add(2.5, 3.7)
+            6.2
+        """
+        result = round(a + b, self.precision)
+        self._log_operation(f"{a} + {b} = {result}")
+        return result
+    
+    def divide(self, a: Union[int, float], b: Union[int, float]) -> float:
+        """Divide two numbers.
+        
+        Args:
+            a: The dividend.
+            b: The divisor.
+        
+        Returns:
+            The quotient of a divided by b.
+        
+        Raises:
+            ZeroDivisionError: If b is zero.
+        
+        Example:
+            >>> calc = Calculator()
+            >>> calc.divide(10, 2)
+            5.0
+            >>> calc.divide(10, 0)
+            Traceback (most recent call last):
+                ...
+            ZeroDivisionError: Cannot divide by zero
+        """
+        if b == 0:
+            raise ZeroDivisionError("Cannot divide by zero")
+        result = round(a / b, self.precision)
+        self._log_operation(f"{a} / {b} = {result}")
+        return result
+    
+    def _log_operation(self, operation: str) -> None:
+        """Log an operation to history (private method).
+        
+        Args:
+            operation: String representation of the operation.
+        """
+        self.history.append(operation)
+        logger.debug(f"Operation logged: {operation}")
+
+
+@dataclass
+class Point:
+    """Represents a point in 2D space.
+    
+    This dataclass provides a simple way to work with 2D coordinates.
+    
+    Attributes:
+        x: The x-coordinate.
+        y: The y-coordinate.
+        label: Optional label for the point.
+    
+    Example:
+        >>> p1 = Point(3, 4)
+        >>> p2 = Point(0, 0, "origin")
+        >>> p1.distance_to(p2)
+        5.0
+    """
+    x: float
+    y: float
+    label: Optional[str] = None
+    
+    def distance_to(self, other: 'Point') -> float:
+        """Calculate Euclidean distance to another point.
+        
+        Args:
+            other: Another Point instance.
+        
+        Returns:
+            The Euclidean distance between this point and other.
+        
+        Example:
+            >>> p1 = Point(0, 0)
+            >>> p2 = Point(3, 4)
+            >>> p1.distance_to(p2)
+            5.0
+        """
+        return ((self.x - other.x) ** 2 + (self.y - other.y) ** 2) ** 0.5
+
+
+def process_data(
+    data: List[Dict[str, Any]], 
+    *,
+    validate: bool = True,
+    transform: Optional[callable] = None
+) -> List[Dict[str, Any]]:
+    """Process a list of data dictionaries.
+    
+    This function validates and optionally transforms data dictionaries.
+    It's designed to be flexible and work with various data formats.
+    
+    Args:
+        data: List of dictionaries to process.
+        validate: Whether to validate data before processing.
+        transform: Optional transformation function to apply to each item.
+    
+    Returns:
+        Processed list of dictionaries.
+    
+    Raises:
+        ValueError: If validation fails.
+        TypeError: If data is not a list of dictionaries.
+    
+    Example:
+        >>> data = [{'name': 'Alice', 'age': 30}, {'name': 'Bob', 'age': 25}]
+        >>> process_data(data, transform=lambda x: {**x, 'adult': x['age'] >= 18})
+        [{'name': 'Alice', 'age': 30, 'adult': True}, 
+         {'name': 'Bob', 'age': 25, 'adult': True}]
+    
+    Note:
+        The validate parameter should be set to False only when you're
+        certain the data is already clean and valid.
+    """
+    if not isinstance(data, list):
+        raise TypeError("Data must be a list")
+    
+    if validate:
+        for item in data:
+            if not isinstance(item, dict):
+                raise TypeError("All items must be dictionaries")
+    
+    if transform:
+        return [transform(item) for item in data]
+    
+    return data.copy()
+```
+
+### NumPy Style Docstrings
+
+```python
+def complex_calculation(matrix, vector, scalar=1.0, method='standard'):
+    """
+    Perform complex matrix-vector calculation.
+    
+    This function implements various methods for matrix-vector operations
+    with optional scalar multiplication.
+    
+    Parameters
+    ----------
+    matrix : numpy.ndarray
+        Input matrix of shape (m, n).
+    vector : numpy.ndarray
+        Input vector of shape (n,) or (n, 1).
+    scalar : float, optional
+        Scalar multiplier for the result. Default is 1.0.
+    method : {'standard', 'fast', 'accurate'}, optional
+        Calculation method to use. Default is 'standard'.
+    
+    Returns
+    -------
+    result : numpy.ndarray
+        Result vector of shape (m,).
+    metadata : dict
+        Dictionary containing calculation metadata:
+        - 'method': The method used
+        - 'time': Execution time in seconds
+        - 'condition_number': Matrix condition number
+    
+    Raises
+    ------
+    ValueError
+        If matrix and vector dimensions don't match.
+    NotImplementedError
+        If the specified method is not implemented.
+    
+    See Also
+    --------
+    numpy.dot : Standard dot product.
+    scipy.linalg.solve : Solve linear systems.
+    
+    Notes
+    -----
+    The 'fast' method uses approximations that may reduce accuracy
+    for ill-conditioned matrices. The 'accurate' method uses higher
+    precision arithmetic but is slower.
+    
+    Examples
+    --------
+    >>> import numpy as np
+    >>> matrix = np.array([[1, 2], [3, 4]])
+    >>> vector = np.array([1, 1])
+    >>> result, meta = complex_calculation(matrix, vector)
+    >>> result
+    array([3., 7.])
+    >>> meta['method']
+    'standard'
+    """
+    pass
+```
+
+## Configuration and Customization
+
+### Custom Templates
+
+```html
+<!-- custom_template.mako -->
+<%!
+    # Template configuration
+    show_inherited_members = True
+    extract_module_toc_into_sidebar = True
+    list_class_variables_in_index = True
+    sort_identifiers = True
+%>
+
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>${module.name} - API Documentation</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/styles/github.min.css">
+    <style>
+        /* Custom styles */
+        .pdoc {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            line-height: 1.6;
+        }
+        .pdoc h1 { color: #2c3e50; }
+        .pdoc pre { background-color: #f6f8fa; }
+        .pdoc .deprecated { text-decoration: line-through; opacity: 0.5; }
+    </style>
+</head>
+<body>
+    <nav class="pdoc">
+        <h2>Modules</h2>
+        ${module_list(modules)}
+    </nav>
+    
+    <main class="pdoc">
+        ${module_html(module)}
+    </main>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/highlight.min.js"></script>
+    <script>hljs.highlightAll();</script>
+</body>
+</html>
+```
+
+### Pdoc Configuration File
+
+```python
+# pdoc_config.py
+"""Configuration for pdoc documentation generation."""
+
+import pdoc
+
+# Configure pdoc
+pdoc.render.configure(
+    docformat='google',  # or 'numpy', 'restructuredtext'
+    show_source=True,
+    show_inherited_members=False,
+    extract_module_toc_into_sidebar=True,
+    list_class_variables_in_index=True,
+    sort_identifiers=True,
+    include_undocumented=False,
+)
+
+# Custom template directory
+template_directory = "docs/templates"
+
+# Modules to document
+modules = [
+    "mypackage",
+    "mypackage.core",
+    "mypackage.utils",
+    "mypackage.api",
+]
+
+# Output configuration
+output_directory = "docs/api"
+```
+
+## CI/CD Integration
+
+### GitHub Actions
+
+```yaml
+name: Generate Documentation
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  docs:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.x'
+    
+    - name: Install dependencies
+      run: |
+        pip install pdoc
+        pip install -e .
+    
+    - name: Generate documentation
+      run: |
+        pdoc --html --output-dir docs/api \
+             --force \
+             --template-dir docs/templates \
+             mypackage
+    
+    - name: Deploy to GitHub Pages
+      if: github.ref == 'refs/heads/main'
+      uses: peaceiris/actions-gh-pages@v3
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        publish_dir: ./docs/api
+```
+
+### Pre-commit Hook
+
+```yaml
+# .pre-commit-config.yaml
+repos:
+  - repo: local
+    hooks:
+      - id: update-docs
+        name: Update API documentation
+        entry: pdoc --html --force --output-dir docs/api
+        language: system
+        files: '\.py$'
+        pass_filenames: false
+```
+
+## Advanced Features
+
+### Excluding Private Members
+
+```python
+__pdoc__ = {
+    'private_function': False,  # Exclude from documentation
+    'internal_class': False,
+    'legacy_method': 'Deprecated. Use new_method instead.',
+}
+
+def public_function():
+    """This will be documented."""
+    pass
+
+def private_function():
+    """This will NOT be documented."""
+    pass
+
+class MyClass:
+    """Public class documentation."""
+    
+    def public_method(self):
+        """This will be documented."""
+        pass
+    
+    def _internal_method(self):
+        """This will NOT be documented by default."""
+        pass
+```
+
+### Dynamic Documentation
+
+```python
+def create_dynamic_docs():
+    """Generate documentation programmatically."""
+    import pdoc
+    
+    # Get module documentation
+    doc = pdoc.doc("mymodule")
+    
+    # Access documentation programmatically
+    for member in doc.members:
+        print(f"{member.name}: {member.docstring}")
+    
+    # Render as HTML
+    html = pdoc.render.html_module(doc)
+    
+    # Render as Markdown
+    markdown = pdoc.render.text_module(doc)
+    
+    return html, markdown
+```
+
+## Best Practices
+
+### Do's
+- Write docstrings for all public modules, classes, and functions
+- Use consistent docstring style throughout the project
+- Include examples in docstrings with expected output
+- Document parameters with types and descriptions
+- Keep docstrings up-to-date with code changes
+- Use markdown formatting for better readability
+- Generate docs as part of CI/CD pipeline
+
+### Don'ts
+- Don't document obvious things (e.g., "Gets the name" for get_name())
+- Don't use complex RestructuredText when Markdown suffices
+- Don't forget to document exceptions and return values
+- Don't mix docstring styles within a project
+- Don't include implementation details in public API docs
+- Don't document private/internal methods unless necessary
+
+This comprehensive guide ensures high-quality API documentation generation with pdoc.
+- Use pdoc's markdown support for rich text formatting in documentation.
+- Generate documentation as part of CI/CD pipeline for up-to-date docs.
+- Host generated documentation with proper navigation and search functionality.
+
+- **Integrate with CI/CD:** Integrate `pdoc` with your CI/CD pipeline to automatically generate and deploy documentation on every commit.
+
+By following these best practices, you can ensure that your Python projects have high-quality, well-maintained documentation that is easy for users to understand and use.

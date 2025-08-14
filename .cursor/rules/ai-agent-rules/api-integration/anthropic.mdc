@@ -1,0 +1,103 @@
+---
+alwaysApply: false
+description: Anthropic Claude API integration rules for building AI applications with
+  Constitutional AI principles.
+globs:
+- '*.py,*.js,*.ts'
+---
+
+- Use Anthropic's Claude API for AI applications requiring high safety and alignment.
+- Implement proper authentication and API key management for secure access.
+- Use Claude's constitutional AI approach for safer and more helpful responses.
+- Implement proper conversation context management for multi-turn interactions.
+- Use appropriate Claude model variants based on task requirements and capabilities.
+- Implement streaming responses for better user experience in long-form generation.
+- Apply proper prompt engineering techniques specific to Claude's training.
+- Handle API rate limits and implement proper retry mechanisms with exponential backoff.
+- Use Claude's safety features and content filtering appropriately.
+- Monitor usage patterns and implement cost optimization strategies.
+description:
+globs:
+alwaysApply: false
+---
+
+# Anthropic Best Practices
+
+
+## Overview
+
+Anthropic Claude API integration rules for building AI applications with Constitutional AI principles.
+
+
+## Getting Started with Anthropic
+
+### Quick Setup
+
+```bash
+# Install Anthropic
+npm install anthropic
+
+# Create new project
+npx create-anthropic-app my-app
+cd my-app
+
+# Start development
+npm run dev
+```
+
+### Basic Component
+
+```javascript
+// components/Example.js
+import { Component } from 'anthropic';
+
+export default function Example() {
+    return (
+        <Component>
+            <h1>Hello Anthropic!</h1>
+        </Component>
+    );
+}
+```
+
+## Advanced Topics
+
+### Performance Optimization
+
+When working with Anthropic, consider these optimization strategies:
+- Cache frequently accessed data
+- Use batch operations where possible
+- Implement connection pooling
+- Monitor resource usage
+- Profile code to identify bottlenecks
+
+### Troubleshooting Guide
+
+Common issues and solutions:
+
+1. **Issue**: Configuration not loading
+   **Solution**: Check file paths and permissions
+
+2. **Issue**: Performance degradation
+   **Solution**: Review logs and increase resource limits
+
+3. **Issue**: Integration failures
+   **Solution**: Verify API versions and compatibility
+
+### Additional Resources
+
+- [Official Documentation](#)
+- [Community Forum](#)
+- [GitHub Repository](#)
+- [Tutorial Videos](#)
+- [Best Practices Guide](#)
+
+### Contributing
+
+Contributions are welcome! Please:
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Submit a pull request
+
+For more details, see CONTRIBUTING.md

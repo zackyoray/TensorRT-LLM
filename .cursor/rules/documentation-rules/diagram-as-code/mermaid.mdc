@@ -1,0 +1,111 @@
+---
+alwaysApply: false
+description: Mermaid diagram-as-code rules for creating visual documentation with
+  code-based diagrams.
+globs:
+- '*.md,*.mmd'
+---
+
+- Use Mermaid for creating maintainable diagrams and visualizations as code.
+- Choose appropriate diagram types (flowchart, sequence, class, ERD) for different use cases.
+- Use clear and descriptive node labels and relationship descriptions.
+- Apply consistent styling and theming for professional diagram appearance.
+- Structure complex diagrams with proper grouping and subgraphs for clarity.
+- Use appropriate arrow types and line styles to convey different relationships.
+- Implement proper version control for diagrams by storing them as text.
+- Include diagrams in documentation workflows with automated rendering.
+- Use Mermaid live editor for rapid prototyping and collaborative diagram design.
+- Export diagrams to various formats (SVG, PNG, PDF) for different documentation needs.
+
+## Overview
+Enforces NVIDIA branding standards for all Mermaid diagrams in TensorRT-LLM documentation.
+
+## Core Requirements
+
+### Mandatory Color Palette
+- **NVIDIA Green**: #76b900 (Primary elements, success states, lightweight components)
+- **NVIDIA Blue**: #0071c5 (Processing steps, active elements, key metrics)
+- **NVIDIA Gray**: #5e5e5e (Secondary information, disabled states)
+- **NVIDIA Black**: #000000 (Heavy components, GPU memory, critical paths)
+- **NVIDIA Light Gray**: #cdcdcd (Neutral elements, backgrounds, communication flows)
+
+### Required Theme Configuration
+All Mermaid diagrams MUST include this theme initialization:
+
+```mermaid
+%%{init: {
+    'theme': 'base',
+    'themeVariables': {
+        'primaryColor': '#76b900',
+        'primaryTextColor': '#fff',
+        'primaryBorderColor': '#000',
+        'lineColor': '#000',
+        'secondaryColor': '#0071c5',
+        'tertiaryColor': '#5e5e5e',
+        'background': '#fff',
+        'mainBkg': '#76b900',
+        'secondBkg': '#0071c5',
+        'tertiaryBkg': '#5e5e5e'
+    }
+}}%%
+```
+
+### Required Class Definitions
+All diagrams MUST include these NVIDIA color classes:
+
+```mermaid
+classDef nvidiaGreen fill:#76b900,stroke:#000,stroke-width:2px,color:#fff
+classDef nvidiaBlue fill:#0071c5,stroke:#000,stroke-width:2px,color:#fff
+classDef nvidiaGray fill:#5e5e5e,stroke:#000,stroke-width:2px,color:#fff
+classDef nvidiaBlack fill:#000,stroke:#fff,stroke-width:2px,color:#fff
+classDef nvidiaLightGray fill:#cdcdcd,stroke:#000,stroke-width:2px,color:#000
+```
+
+### Color Assignment Guidelines
+- **Green**: Primary elements, success states, lightweight components (router hash tables)
+- **Blue**: Processing steps, active elements, key metrics
+- **Gray**: Secondary information, disabled states, what's NOT stored
+- **Black**: Heavy components, GPU memory, critical paths
+- **Light Gray**: Neutral elements, backgrounds, communication flows
+
+### Accessibility Requirements
+- Ensure text contrast meets WCAG AA standards
+- Use patterns or shapes in addition to color for critical distinctions
+- Provide text descriptions for color-coded elements
+- Test diagrams in both light and dark modes
+
+### Quality Standards
+- Use colors consistently across related diagrams
+- Always include class definitions in every diagram
+- Follow TensorRT-LLM documentation standards
+- Ensure sufficient contrast for readability
+
+## Best Practices
+- Use Method 2 (Class-Based Styling) for maximum control
+- Apply NVIDIA branding consistently across all technical documentation
+- Test diagram readability in various viewing contexts
+- Maintain color consistency across diagram series
+
+## Example Implementation
+```mermaid
+%%{init: {'theme': 'base', 'themeVariables': {'primaryColor': '#76b900'}}}%%
+graph TB
+    A["TensorRT Engine"]
+    B["GPU Memory"]
+    
+    classDef nvidiaGreen fill:#76b900,stroke:#000,stroke-width:2px,color:#fff
+    classDef nvidiaBlack fill:#000,stroke:#fff,stroke-width:2px,color:#fff
+    
+    class A nvidiaGreen
+    class B nvidiaBlack
+    
+    A --> B
+``` 
+
+# Mermaid Best Practices
+
+
+## Overview
+
+Mermaid diagram-as-code rules for creating visual documentation with code-based diagrams.
+

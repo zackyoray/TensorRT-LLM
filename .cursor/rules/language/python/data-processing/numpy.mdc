@@ -1,0 +1,130 @@
+---
+alwaysApply: false
+description: NumPy rules for efficient numerical computing and array operations in
+  Python.
+globs:
+- '*.py'
+---
+
+- Use NumPy arrays for efficient numerical computations and data manipulation.
+- Leverage vectorized operations instead of explicit loops for better performance.
+- Use proper array indexing and slicing for data access and modification.
+- Implement broadcasting rules for operations between arrays of different shapes.
+- Use NumPy's mathematical functions for element-wise operations.
+- Handle memory layout and data types efficiently for optimal performance.
+- Use structured arrays for heterogeneous data when appropriate.
+- Implement proper error handling for array operations and edge cases.
+- Use NumPy's random module for reproducible random number generation.
+- Optimize array operations with proper data types and memory allocation.
+description:
+globs:
+alwaysApply: false
+---
+
+# Numpy Best Practices
+
+
+## Overview
+
+NumPy rules for efficient numerical computing and array operations in Python.
+
+
+## Installation and Setup
+
+### Basic Installation
+
+```bash
+pip install numpy
+```
+
+### Import and Basic Usage
+
+```python
+import numpy
+
+# Initialize
+client = numpy.Client()
+
+# Basic operation
+result = client.process(data)
+print(result)
+```
+
+## Code Examples
+
+### Example 1: Basic Usage
+
+```python
+# Numpy basic example
+from numpy import main_function
+
+# Process data
+data = ["item1", "item2", "item3"]
+results = main_function(data)
+
+for result in results:
+    print(f"Processed: {result}")
+```
+
+### Example 2: Advanced Features
+
+```python
+# Advanced configuration
+config = {
+    'timeout': 30,
+    'retry_count': 3,
+    'verbose': True
+}
+
+# Create configured instance
+instance = numpy.create(**config)
+
+# Use advanced features
+with instance.context() as ctx:
+    output = ctx.advanced_operation(
+        input_data=data,
+        options={'parallel': True}
+    )
+```
+
+## Advanced Topics
+
+### Performance Optimization
+
+When working with Numpy, consider these optimization strategies:
+- Cache frequently accessed data
+- Use batch operations where possible
+- Implement connection pooling
+- Monitor resource usage
+- Profile code to identify bottlenecks
+
+### Troubleshooting Guide
+
+Common issues and solutions:
+
+1. **Issue**: Configuration not loading
+   **Solution**: Check file paths and permissions
+
+2. **Issue**: Performance degradation
+   **Solution**: Review logs and increase resource limits
+
+3. **Issue**: Integration failures
+   **Solution**: Verify API versions and compatibility
+
+### Additional Resources
+
+- [Official Documentation](#)
+- [Community Forum](#)
+- [GitHub Repository](#)
+- [Tutorial Videos](#)
+- [Best Practices Guide](#)
+
+### Contributing
+
+Contributions are welcome! Please:
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Submit a pull request
+
+For more details, see CONTRIBUTING.md

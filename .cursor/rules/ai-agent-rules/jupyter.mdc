@@ -1,0 +1,553 @@
+---
+title: Jupyter Notebook Best Practices
+---
+
+# Jupyter Notebook Best Practices
+
+## Overview
+
+Jupyter notebooks provide an interactive computing environment that combines code execution, rich text, mathematics, plots, and rich media. They are essential tools for data science, machine learning experimentation, and collaborative research, enabling reproducible and shareable computational narratives.
+
+## Core Principles
+
+- Use Jupyter notebooks for interactive data exploration, prototyping, and AI model development
+- Structure notebooks with clear sections, markdown documentation, and logical flow
+- Use meaningful cell outputs and visualizations to communicate findings effectively
+- Implement proper data loading, preprocessing, and validation in notebook workflows
+- Use version control best practices with tools like nbstripout for clean Git history
+- Convert production-ready code from notebooks to proper Python modules and packages
+- Use appropriate notebook extensions and tools for enhanced productivity and collaboration
+- Implement proper error handling and debugging techniques in notebook environments
+- Use notebooks for model experimentation while maintaining reproducible research practices
+- Share notebooks with clear documentation, requirements, and data dependencies
+
+## Notebook Structure and Organization
+
+### Well-Structured Notebook Template
+
+```python
+# # Project Title: Data Analysis for Customer Churn Prediction
+# 
+# **Author:** Your Name  
+# **Date:** 2024-01-15  
+# **Python Version:** 3.10+  
+# **Dependencies:** See requirements.txt
+# 
+# ## Table of Contents
+# 1. [Introduction](#introduction)
+# 2. [Setup and Imports](#setup)
+# 3. [Data Loading](#data-loading)
+# 4. [Exploratory Data Analysis](#eda)
+# 5. [Feature Engineering](#features)
+# 6. [Model Development](#modeling)
+# 7. [Results and Evaluation](#results)
+# 8. [Conclusions](#conclusions)
+
+# %% [markdown]
+# ## 1. Introduction <a id='introduction'></a>
+# 
+# This notebook analyzes customer churn patterns and builds predictive models
+# to identify customers at risk of leaving. The analysis includes:
+# - Exploratory data analysis of customer behavior
+# - Feature engineering based on domain knowledge
+# - Model comparison and selection
+# - Performance evaluation and business recommendations
+
+# %% [markdown]
+# ## 2. Setup and Imports <a id='setup'></a>
+
+# %%
+# Standard library imports
+import os
+import sys
+import warnings
+from datetime import datetime
+from pathlib import Path
+
+# Data manipulation
+import numpy as np
+import pandas as pd
+
+# Visualization
+import matplotlib.pyplot as plt
+import seaborn as sns
+import plotly.express as px
+import plotly.graph_objects as go
+
+# Machine Learning
+from sklearn.model_selection import train_test_split, cross_val_score
+from sklearn.preprocessing import StandardScaler, LabelEncoder
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.metrics import classification_report, confusion_matrix
+import xgboost as xgb
+
+# Utilities
+from tqdm.notebook import tqdm
+import joblib
+
+# Configuration
+warnings.filterwarnings('ignore')
+pd.set_option('display.max_columns', None)
+pd.set_option('display.max_rows', 100)
+
+# Set random seed for reproducibility
+RANDOM_SEED = 42
+np.random.seed(RANDOM_SEED)
+
+# Define paths
+DATA_DIR = Path('../data')
+OUTPUT_DIR = Path('../output')
+MODEL_DIR = Path('../models')
+
+# Create directories if they don't exist
+for dir_path in [OUTPUT_DIR, MODEL_DIR]:
+    dir_path.mkdir(parents=True, exist_ok=True)
+
+print(f"Notebook initialized at {datetime.now()}")
+print(f"Working directory: {os.getcwd()}")
+```
+
+### Data Loading with Error Handling
+
+```python
+# %% [markdown]
+# ## 3. Data Loading <a id='data-loading'></a>
+
+# %%
+def load_data(file_path, **kwargs):
+    """Load data with error handling and basic validation."""
+    try:
+        # Detect file type and load accordingly
+        file_ext = Path(file_path).suffix.lower()
+        
+        if file_ext == '.csv':
+            df = pd.read_csv(file_path, **kwargs)
+        elif file_ext == '.parquet':
+            df = pd.read_parquet(file_path, **kwargs)
+        elif file_ext in ['.xlsx', '.xls']:
+            df = pd.read_excel(file_path, **kwargs)
+        else:
+            raise ValueError(f"Unsupported file format: {file_ext}")
+        
+        print(f"✓ Loaded {len(df):,} rows and {len(df.columns)} columns")
+        print(f"Memory usage: {df.memory_usage().sum() / 1024**2:.2f} MB")
+        
+        return df
+        
+    except FileNotFoundError:
+        print(f"❌ File not found: {file_path}")
+        raise
+    except Exception as e:
+        print(f"❌ Error loading data: {str(e)}")
+        raise
+
+# Load datasets
+df_customers = load_data(DATA_DIR / 'customers.csv')
+df_transactions = load_data(DATA_DIR / 'transactions.parquet')
+
+# Display basic information
+display(df_customers.head())
+print("\nData Types:")
+print(df_customers.dtypes)
+print("\nMissing Values:")
+print(df_customers.isnull().sum())
+```
+
+## Interactive Visualizations
+
+### Plotly Interactive Charts
+
+```python
+# %% [markdown]
+# ## 4. Exploratory Data Analysis <a id='eda'></a>
+
+# %%
+# Create interactive visualizations
+def create_interactive_dist(df, column, title=None):
+    """Create interactive distribution plot."""
+    fig = px.histogram(
+        df, 
+        x=column, 
+        marginal="box",
+        title=title or f"Distribution of {column}",
+        template="plotly_white"
+    )
+    fig.update_layout(
+        showlegend=False,
+        height=400,
+        font=dict(family="Arial", size=12)
+    )
+    return fig
+
+# Analyze numerical features
+numerical_cols = df_customers.select_dtypes(include=[np.number]).columns
+
+for col in numerical_cols[:3]:  # Show first 3
+    fig = create_interactive_dist(df_customers, col)
+    fig.show()
+
+# %%
+# Correlation heatmap
+def plot_correlation_heatmap(df, figsize=(10, 8)):
+    """Create interactive correlation heatmap."""
+    # Calculate correlation matrix
+    corr_matrix = df.select_dtypes(include=[np.number]).corr()
+    
+    # Create heatmap
+    fig = go.Figure(data=go.Heatmap(
+        z=corr_matrix.values,
+        x=corr_matrix.columns,
+        y=corr_matrix.columns,
+        colorscale='RdBu',
+        zmid=0,
+        text=np.round(corr_matrix.values, 2),
+        texttemplate='%{text}',
+        textfont={"size": 10},
+        hoverongaps=False
+    ))
+    
+    fig.update_layout(
+        title='Feature Correlation Matrix',
+        width=figsize[0]*100,
+        height=figsize[1]*100,
+        font=dict(size=12)
+    )
+    
+    return fig
+
+correlation_fig = plot_correlation_heatmap(df_customers)
+correlation_fig.show()
+```
+
+## Notebook Magic Commands
+
+### Useful Magic Commands
+
+```python
+# %% [markdown]
+# ### Jupyter Magic Commands for Productivity
+
+# %%
+# Time a single line
+%time sum([i**2 for i in range(10000)])
+
+# %%
+# Time multiple runs for more accurate measurement
+%timeit sum([i**2 for i in range(1000)])
+
+# %%
+# Profile memory usage
+%load_ext memory_profiler
+
+def memory_intensive_function():
+    # Create large list
+    data = [i for i in range(1000000)]
+    # Create DataFrame
+    df = pd.DataFrame({'values': data})
+    return df.describe()
+
+%memit memory_intensive_function()
+
+# %%
+# Save cell content to file
+%%writefile utils/preprocessing.py
+def preprocess_data(df):
+    """Preprocess the input dataframe."""
+    # Remove duplicates
+    df = df.drop_duplicates()
+    
+    # Handle missing values
+    numeric_columns = df.select_dtypes(include=[np.number]).columns
+    df[numeric_columns] = df[numeric_columns].fillna(df[numeric_columns].median())
+    
+    return df
+
+# %%
+# Run shell commands
+!pip list | grep pandas
+
+# %%
+# Display all variables
+%whos DataFrame
+```
+
+## Model Development Workflow
+
+### Experiment Tracking
+
+```python
+# %% [markdown]
+# ## 5. Model Development <a id='modeling'></a>
+
+# %%
+class ExperimentTracker:
+    """Track ML experiments in notebooks."""
+    
+    def __init__(self, experiment_name):
+        self.experiment_name = experiment_name
+        self.results = []
+        self.timestamp = datetime.now()
+        
+    def log_experiment(self, model_name, params, metrics, notes=""):
+        """Log experiment details."""
+        experiment = {
+            'timestamp': datetime.now(),
+            'model': model_name,
+            'params': params,
+            'metrics': metrics,
+            'notes': notes
+        }
+        self.results.append(experiment)
+        
+    def get_results_df(self):
+        """Get results as DataFrame."""
+        if not self.results:
+            return pd.DataFrame()
+        
+        # Flatten nested dictionaries
+        flattened_results = []
+        for result in self.results:
+            flat_result = {
+                'timestamp': result['timestamp'],
+                'model': result['model'],
+                'notes': result['notes']
+            }
+            # Add parameters
+            for key, value in result['params'].items():
+                flat_result[f'param_{key}'] = value
+            # Add metrics
+            for key, value in result['metrics'].items():
+                flat_result[f'metric_{key}'] = value
+            
+            flattened_results.append(flat_result)
+        
+        return pd.DataFrame(flattened_results)
+    
+    def save_results(self, filepath):
+        """Save results to file."""
+        df = self.get_results_df()
+        df.to_csv(filepath, index=False)
+        print(f"Results saved to {filepath}")
+
+# Initialize experiment tracker
+tracker = ExperimentTracker("customer_churn_prediction")
+
+# %%
+# Model training with experiment tracking
+from sklearn.model_selection import GridSearchCV
+
+# Define parameter grid
+param_grid = {
+    'n_estimators': [100, 200],
+    'max_depth': [5, 10, None],
+    'min_samples_split': [2, 5]
+}
+
+# Grid search with cross-validation
+grid_search = GridSearchCV(
+    RandomForestClassifier(random_state=RANDOM_SEED),
+    param_grid,
+    cv=5,
+    scoring='roc_auc',
+    n_jobs=-1,
+    verbose=1
+)
+
+# Train model
+grid_search.fit(X_train, y_train)
+
+# Log results
+tracker.log_experiment(
+    model_name="RandomForest_GridSearch",
+    params=grid_search.best_params_,
+    metrics={
+        'cv_score': grid_search.best_score_,
+        'train_score': grid_search.score(X_train, y_train),
+        'test_score': grid_search.score(X_test, y_test)
+    },
+    notes="Initial grid search for baseline model"
+)
+
+# Display results
+display(tracker.get_results_df())
+```
+
+## Notebook Extensions and Tools
+
+### Useful Extensions
+
+```python
+# %% [markdown]
+# ## Jupyter Extensions Setup
+# 
+# Install useful extensions:
+# ```bash
+# # Jupyter extensions
+# pip install jupyter_contrib_nbextensions
+# jupyter contrib nbextension install --user
+# 
+# # Enable useful extensions
+# jupyter nbextension enable collapsible_headings/main
+# jupyter nbextension enable execute_time/ExecuteTime
+# jupyter nbextension enable varInspector/main
+# 
+# # JupyterLab extensions
+# jupyter labextension install @jupyterlab/toc
+# jupyter labextension install @jupyter-widgets/jupyterlab-manager
+# ```
+
+# %%
+# Interactive widgets example
+import ipywidgets as widgets
+from IPython.display import display
+
+def interactive_data_filter(df):
+    """Create interactive filtering widget."""
+    
+    # Create widgets
+    column_dropdown = widgets.Dropdown(
+        options=df.columns.tolist(),
+        description='Column:'
+    )
+    
+    value_slider = widgets.FloatSlider(
+        min=0,
+        max=100,
+        step=1,
+        description='Threshold:'
+    )
+    
+    output = widgets.Output()
+    
+    def update_filter(change):
+        with output:
+            output.clear_output()
+            if column_dropdown.value in df.select_dtypes(include=[np.number]).columns:
+                filtered = df[df[column_dropdown.value] > value_slider.value]
+                print(f"Filtered {len(filtered)} rows where {column_dropdown.value} > {value_slider.value}")
+                display(filtered.head())
+    
+    column_dropdown.observe(update_filter, names='value')
+    value_slider.observe(update_filter, names='value')
+    
+    return widgets.VBox([column_dropdown, value_slider, output])
+
+# Create interactive filter
+interactive_filter = interactive_data_filter(df_customers)
+display(interactive_filter)
+```
+
+## Version Control Best Practices
+
+### Git Integration
+
+```python
+# %% [markdown]
+# ## Version Control for Notebooks
+# 
+# ### Setup nbstripout for clean diffs:
+# ```bash
+# pip install nbstripout
+# nbstripout --install --attributes .gitattributes
+# ```
+# 
+# ### .gitattributes content:
+# ```
+# *.ipynb filter=nbstripout
+# *.ipynb diff=ipynb
+# ```
+
+# %%
+# Save notebook configuration
+notebook_config = {
+    'python_version': sys.version,
+    'notebook_version': !jupyter --version,
+    'key_packages': {
+        'pandas': pd.__version__,
+        'numpy': np.__version__,
+        'sklearn': sklearn.__version__,
+    },
+    'created_date': datetime.now().isoformat(),
+    'author': 'Your Name',
+    'description': 'Customer churn analysis and prediction'
+}
+
+# Save configuration
+import json
+with open('notebook_config.json', 'w') as f:
+    json.dump(notebook_config, f, indent=2)
+
+print("Notebook configuration saved")
+```
+
+## Converting Notebooks to Scripts
+
+### Production Code Export
+
+```python
+# %% [markdown]
+# ## Export to Python Script
+
+# %%
+# Tag cells for export
+# Use cell tags: 'export', 'no-export'
+
+# Convert notebook to script (run in terminal):
+# jupyter nbconvert --to script --TagRemovePreprocessor.remove_cell_tags='{"no-export"}' notebook.ipynb
+
+# %%
+# Example of production-ready function
+def train_production_model(data_path, model_params=None):
+    """Production-ready training function.
+    
+    Args:
+        data_path: Path to training data
+        model_params: Model hyperparameters
+        
+    Returns:
+        Trained model and metrics
+    """
+    # This cell would be tagged with 'export'
+    
+    # Load data
+    data = pd.read_csv(data_path)
+    
+    # Preprocess
+    X, y = preprocess_data(data)
+    
+    # Train model
+    model = RandomForestClassifier(**(model_params or {}))
+    model.fit(X, y)
+    
+    return model
+```
+
+## Best Practices
+
+### Do's
+- Start notebooks with clear objectives and documentation
+- Use meaningful variable names and add comments
+- Break complex operations into separate cells
+- Include markdown cells to explain your thought process
+- Save intermediate results for long computations
+- Use version control with nbstripout
+- Set random seeds for reproducibility
+- Include requirements.txt or environment.yml
+
+### Don'ts
+- Don't put everything in one giant cell
+- Don't ignore error messages and warnings
+- Don't hardcode paths - use relative paths or config
+- Don't leave output from failed experiments
+- Don't commit large data files with notebooks
+- Don't use notebooks for production services
+- Don't forget to restart and run all before sharing
+
+This comprehensive guide ensures effective use of Jupyter notebooks for data science and AI development workflows.
+
+- Use version control best practices with tools like nbstripout for clean Git history.
+- Convert production-ready code from notebooks to proper Python modules and packages.
+- Use appropriate notebook extensions and tools for enhanced productivity and collaboration.
+- Implement proper error handling and debugging techniques in notebook environments.
+- Use notebooks for model experimentation while maintaining reproducible research practices.
+- Share notebooks with clear documentation, requirements, and data dependencies.

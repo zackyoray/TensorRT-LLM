@@ -1,0 +1,87 @@
+---
+alwaysApply: false
+description: Technical writing rules for creating clear, concise, and effective documentation.
+globs:
+- '*.md,*.rst,*.txt'
+---
+
+- Write clear, concise, and accessible technical documentation for diverse audiences.
+- Structure content with logical hierarchy using headings, lists, and proper formatting.
+- Use active voice and present tense for direct and engaging writing style.
+- Include practical examples, code snippets, and step-by-step procedures.
+- Apply consistent terminology and maintain a comprehensive glossary of technical terms.
+- Write task-oriented content that helps users accomplish specific goals.
+- Use appropriate visuals, diagrams, and screenshots to enhance understanding.
+- Implement proper editing and review processes for accuracy and clarity.
+- Follow style guides and maintain consistency across all documentation.
+- Test documentation with real users to ensure usability and effectiveness.
+
+# Technical Writing Best Practices
+
+
+## Overview
+
+Technical writing rules for creating clear, concise, and effective documentation.
+
+
+## Core Concepts
+
+### Key Features
+- Feature 1: Description of what this feature does
+- Feature 2: How this improves workflow
+- Feature 3: Integration capabilities
+- Feature 4: Performance benefits
+
+### Common Use Cases
+1. **Use Case 1**: When you need to accomplish X
+2. **Use Case 2**: For scenarios requiring Y
+3. **Use Case 3**: To optimize Z processes
+
+### Best Practices
+- Always follow the principle of least privilege
+- Keep configurations version controlled
+- Monitor performance metrics
+- Implement proper error handling
+- Use consistent naming conventions
+
+## Advanced Topics
+
+### Performance Optimization
+
+When working with Technical Writing, consider these optimization strategies:
+- Cache frequently accessed data
+- Use batch operations where possible
+- Implement connection pooling
+- Monitor resource usage
+- Profile code to identify bottlenecks
+
+### Troubleshooting Guide
+
+Common issues and solutions:
+
+1. **Issue**: Configuration not loading
+   **Solution**: Check file paths and permissions
+
+2. **Issue**: Performance degradation
+   **Solution**: Review logs and increase resource limits
+
+3. **Issue**: Integration failures
+   **Solution**: Verify API versions and compatibility
+
+### Additional Resources
+
+- [Official Documentation](#)
+- [Community Forum](#)
+- [GitHub Repository](#)
+- [Tutorial Videos](#)
+- [Best Practices Guide](#)
+
+### Contributing
+
+Contributions are welcome! Please:
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Submit a pull request
+
+For more details, see CONTRIBUTING.md

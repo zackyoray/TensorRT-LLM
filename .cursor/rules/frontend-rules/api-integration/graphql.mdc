@@ -1,0 +1,99 @@
+---
+alwaysApply: false
+description: GraphQL API integration rules for efficient data fetching and modern
+  API development.
+globs:
+- '*.js,*.jsx,*.ts,*.tsx,*.graphql,*.gql'
+---
+
+- Use GraphQL for efficient and flexible API data fetching with precise queries.
+- Implement proper schema design with clear types, queries, and mutations.
+- Use appropriate GraphQL clients (Apollo Client, Relay, urql) for frontend integration.
+- Implement proper error handling and loading states for GraphQL operations.
+- Use GraphQL fragments for reusable query components and data consistency.
+- Implement proper caching strategies with GraphQL client cache management.
+- Use subscriptions for real-time data updates and live application features.
+- Apply proper security measures including query complexity analysis and rate limiting.
+- Implement GraphQL code generation for type-safe API interactions.
+- Use proper testing strategies for GraphQL queries, mutations, and schemas.
+
+# Graphql Best Practices
+
+
+## Overview
+
+GraphQL API integration rules for efficient data fetching and modern API development.
+
+
+## Getting Started with Graphql
+
+### Quick Setup
+
+```bash
+# Install Graphql
+npm install graphql
+
+# Create new project
+npx create-graphql-app my-app
+cd my-app
+
+# Start development
+npm run dev
+```
+
+### Basic Component
+
+```javascript
+// components/Example.js
+import { Component } from 'graphql';
+
+export default function Example() {
+    return (
+        <Component>
+            <h1>Hello Graphql!</h1>
+        </Component>
+    );
+}
+```
+
+## Advanced Topics
+
+### Performance Optimization
+
+When working with Graphql, consider these optimization strategies:
+- Cache frequently accessed data
+- Use batch operations where possible
+- Implement connection pooling
+- Monitor resource usage
+- Profile code to identify bottlenecks
+
+### Troubleshooting Guide
+
+Common issues and solutions:
+
+1. **Issue**: Configuration not loading
+   **Solution**: Check file paths and permissions
+
+2. **Issue**: Performance degradation
+   **Solution**: Review logs and increase resource limits
+
+3. **Issue**: Integration failures
+   **Solution**: Verify API versions and compatibility
+
+### Additional Resources
+
+- [Official Documentation](#)
+- [Community Forum](#)
+- [GitHub Repository](#)
+- [Tutorial Videos](#)
+- [Best Practices Guide](#)
+
+### Contributing
+
+Contributions are welcome! Please:
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Submit a pull request
+
+For more details, see CONTRIBUTING.md

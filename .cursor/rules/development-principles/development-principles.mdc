@@ -1,0 +1,38 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+
+# Development Principles
+
+These are foundational principles to be applied to all code and interactions.
+
+## YAGNI + SOLID + KISS + DRY
+Always consider these principles when designing or adding new code:
+- YAGNI (You Aren't Gonna Need It): Don't add functionality until necessary
+- SOLID: Single responsibility, Open-closed, Liskov substitution, Interface segregation, Dependency inversion
+- KISS: Keep It Simple, Stupid
+- DRY: Don't Repeat Yourself
+
+## Efficiency Principles
+Balance efficiency with readability and maintainability:
+- **Algorithmic Efficiency**: Choose appropriate algorithms with optimal time complexity for the scale of data
+  - Prefer O(n) or O(log n) solutions over O(n²) when working with large datasets
+  - Use vectorized operations (like in pandas/numpy) over loops when processing large amounts of data
+  - Consider chunking for processing large datasets that don't fit in memory
+  - Avoid premature optimization; measure before optimizing
+- **Memory Efficiency**: 
+  - Use generators/iterators for large sequences when appropriate
+  - Implement caching for expensive computations that are repeated
+  - Release resources promptly when no longer needed (close files, connections)
+  - Process large data in chunks to avoid memory exhaustion
+- **Storage Efficiency**:
+  - Select appropriate data formats (e.g., parquet over csv for large analytical data)
+  - Compress data when appropriate for long-term storage
+  - Only store data that is necessary for business requirements
+- **Implementation Balance**:
+  - Never sacrifice code readability for minor efficiency gains
+  - Document performance-focused code with clear explanations
+  - Only implement complex optimizations when there's measurable benefit
+  - Use profiling to identify actual bottlenecks rather than speculating

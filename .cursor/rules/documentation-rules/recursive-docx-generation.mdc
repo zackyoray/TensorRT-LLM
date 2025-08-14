@@ -1,0 +1,741 @@
+# Recursive DOCX Generation Best Practices
+
+## Overview
+
+This rule provides guidelines for creating comprehensive DOCX documents by recursively following links in README files and combining all referenced documentation into a single, well-structured document. This is particularly useful for generating offline documentation, client deliverables, or comprehensive project overviews.
+
+## Core Principles
+
+- Parse README files to identify links to other documentation
+- Follow links recursively while preventing infinite loops
+- Maintain document hierarchy and structure
+- Preserve formatting and code blocks
+- Handle images and diagrams appropriately
+- Generate well-formatted DOCX output with proper styling
+- Include table of contents and navigation
+- Support configuration for depth limits and exclusions
+- Provide progress tracking for large documentation sets
+- Handle errors gracefully with clear reporting
+
+## Implementation Strategy
+
+### Basic Document Crawler
+
+```python
+#!/usr/bin/env python3
+"""
+Recursive DOCX Generator - Creates comprehensive documentation from linked READMEs
+"""
+
+import os
+import re
+from pathlib import Path
+from typing import List, Set, Dict, Optional, Tuple
+from urllib.parse import urljoin, urlparse
+import requests
+from docx import Document
+from docx.shared import Inches, Pt, RGBColor
+from docx.enum.text import WD_ALIGN_PARAGRAPH
+from docx.enum.style import WD_STYLE_TYPE
+import markdown
+from bs4 import BeautifulSoup
+import logging
+from dataclasses import dataclass
+from collections import deque
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+
+@dataclass
+class DocumentNode:
+    """Represents a document in the hierarchy"""
+    path: str
+    title: str
+    level: int
+    content: str
+    children: List['DocumentNode']
+    parent: Optional['DocumentNode'] = None
+
+
+class RecursiveDocxGenerator:
+    """Generate comprehensive DOCX from linked documentation"""
+    
+    def __init__(self, 
+                 base_path: str = ".",
+                 max_depth: int = 10,
+                 exclude_patterns: List[str] = None,
+                 include_external: bool = False):
+        self.base_path = Path(base_path).resolve()
+        self.max_depth = max_depth
+        self.exclude_patterns = exclude_patterns or []
+        self.include_external = include_external
+        self.visited: Set[str] = set()
+        self.doc_tree: Optional[DocumentNode] = None
+        
+    def generate(self, start_file: str = "README.md", output: str = "documentation.docx"):
+        """Generate DOCX from starting README"""
+        logger.info(f"Starting recursive documentation generation from {start_file}")
+        
+        # Build document tree
+        self.doc_tree = self._crawl_documents(start_file, level=0)
+        
+        # Create DOCX
+        doc = Document()
+        self._setup_styles(doc)
+        
+        # Add title page
+        self._add_title_page(doc, self.doc_tree.title)
+        
+        # Add table of contents
+        self._add_table_of_contents(doc, self.doc_tree)
+        
+        # Add content recursively
+        self._add_content_recursive(doc, self.doc_tree)
+        
+        # Save document
+        doc.save(output)
+        logger.info(f"Documentation saved to {output}")
+        
+        return output
+    
+    def _crawl_documents(self, file_path: str, level: int, parent: Optional[DocumentNode] = None) -> DocumentNode:
+        """Recursively crawl and build document tree"""
+        # Normalize path
+        if urlparse(file_path).scheme:
+            # External URL
+            if not self.include_external:
+                return None
+            normalized_path = file_path
+        else:
+            # Local file
+            if parent and parent.path:
+                base_dir = Path(parent.path).parent
+                normalized_path = (base_dir / file_path).resolve()
+            else:
+                normalized_path = (self.base_path / file_path).resolve()
+            normalized_path = str(normalized_path)
+        
+        # Check if already visited
+        if normalized_path in self.visited:
+            logger.warning(f"Circular reference detected: {normalized_path}")
+            return None
+        
+        # Check depth limit
+        if level > self.max_depth:
+            logger.warning(f"Max depth reached at: {normalized_path}")
+            return None
+        
+        # Check exclusion patterns
+        if any(pattern in normalized_path for pattern in self.exclude_patterns):
+            logger.info(f"Excluded by pattern: {normalized_path}")
+            return None
+        
+        self.visited.add(normalized_path)
+        
+        # Read content
+        try:
+            content = self._read_document(normalized_path)
+        except Exception as e:
+            logger.error(f"Failed to read {normalized_path}: {e}")
+            return None
+        
+        # Extract title
+        title = self._extract_title(content, file_path)
+        
+        # Create node
+        node = DocumentNode(
+            path=normalized_path,
+            title=title,
+            level=level,
+            content=content,
+            children=[],
+            parent=parent
+        )
+        
+        # Find and process links
+        links = self._extract_links(content, normalized_path)
+        for link in links:
+            if link.endswith('.md') or 'README' in link:
+                child = self._crawl_documents(link, level + 1, node)
+                if child:
+                    node.children.append(child)
+        
+        return node
+    
+    def _read_document(self, path: str) -> str:
+        """Read document content from file or URL"""
+        if urlparse(path).scheme:
+            # External URL
+            response = requests.get(path, timeout=10)
+            response.raise_for_status()
+            return response.text
+        else:
+            # Local file
+            with open(path, 'r', encoding='utf-8') as f:
+                return f.read()
+    
+    def _extract_title(self, content: str, filename: str) -> str:
+        """Extract title from markdown content"""
+        # Try to find first H1
+        lines = content.split('\n')
+        for line in lines:
+            if line.strip().startswith('# '):
+                return line.strip()[2:].strip()
+        
+        # Fallback to filename
+        return Path(filename).stem.replace('-', ' ').replace('_', ' ').title()
+    
+    def _extract_links(self, content: str, base_path: str) -> List[str]:
+        """Extract markdown links from content"""
+        links = []
+        
+        # Markdown link pattern [text](url)
+        pattern = r'\[([^\]]+)\]\(([^)]+)\)'
+        matches = re.findall(pattern, content)
+        
+        for text, url in matches:
+            # Skip anchors and external non-markdown links
+            if url.startswith('#'):
+                continue
+            if urlparse(url).scheme and not url.endswith('.md'):
+                continue
+            
+            # Resolve relative paths
+            if not urlparse(url).scheme:
+                base_dir = Path(base_path).parent if Path(base_path).is_file() else Path(base_path)
+                resolved = (base_dir / url).resolve()
+                if resolved.exists():
+                    links.append(str(resolved))
+            else:
+                links.append(url)
+        
+        return links
+    
+    def _setup_styles(self, doc: Document):
+        """Setup custom styles for the document"""
+        styles = doc.styles
+        
+        # Title style
+        title_style = styles.add_style('CustomTitle', WD_STYLE_TYPE.PARAGRAPH)
+        title_style.font.name = 'Arial'
+        title_style.font.size = Pt(28)
+        title_style.font.bold = True
+        title_style.paragraph_format.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        title_style.paragraph_format.space_after = Pt(12)
+        
+        # TOC styles
+        for i in range(1, 6):
+            toc_style = styles.add_style(f'TOC{i}', WD_STYLE_TYPE.PARAGRAPH)
+            toc_style.font.name = 'Arial'
+            toc_style.font.size = Pt(12 - i)
+            toc_style.paragraph_format.left_indent = Inches(0.5 * (i - 1))
+            toc_style.paragraph_format.space_after = Pt(3)
+        
+        # Code block style
+        code_style = styles.add_style('CodeBlock', WD_STYLE_TYPE.PARAGRAPH)
+        code_style.font.name = 'Consolas'
+        code_style.font.size = Pt(9)
+        code_style.paragraph_format.left_indent = Inches(0.5)
+        code_style.paragraph_format.space_before = Pt(6)
+        code_style.paragraph_format.space_after = Pt(6)
+    
+    def _add_title_page(self, doc: Document, title: str):
+        """Add title page to document"""
+        # Title
+        doc.add_paragraph(title, style='CustomTitle')
+        
+        # Subtitle
+        subtitle = doc.add_paragraph()
+        subtitle.add_run('Comprehensive Documentation').italic = True
+        subtitle.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        
+        # Date
+        from datetime import datetime
+        date_para = doc.add_paragraph()
+        date_para.add_run(f'Generated: {datetime.now().strftime("%B %d, %Y")}')
+        date_para.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        
+        # Page break
+        doc.add_page_break()
+    
+    def _add_table_of_contents(self, doc: Document, root: DocumentNode):
+        """Add table of contents"""
+        doc.add_heading('Table of Contents', level=1)
+        
+        def add_toc_entry(node: DocumentNode, doc: Document):
+            if node.level > 0:  # Skip root
+                toc_para = doc.add_paragraph(style=f'TOC{min(node.level, 5)}')
+                toc_para.add_run(node.title)
+            
+            for child in node.children:
+                add_toc_entry(child, doc)
+        
+        add_toc_entry(root, doc)
+        doc.add_page_break()
+    
+    def _add_content_recursive(self, doc: Document, node: DocumentNode):
+        """Add content recursively"""
+        # Add heading (except for root)
+        if node.level > 0:
+            doc.add_heading(node.title, level=min(node.level, 9))
+        
+        # Convert markdown to docx elements
+        self._add_markdown_content(doc, node.content)
+        
+        # Add children
+        for child in node.children:
+            self._add_content_recursive(doc, child)
+    
+    def _add_markdown_content(self, doc: Document, markdown_text: str):
+        """Convert markdown to DOCX elements"""
+        # Convert markdown to HTML
+        html = markdown.markdown(
+            markdown_text,
+            extensions=['fenced_code', 'tables', 'nl2br']
+        )
+        
+        # Parse HTML
+        soup = BeautifulSoup(html, 'html.parser')
+        
+        # Process elements
+        for element in soup.children:
+            self._process_element(doc, element)
+    
+    def _process_element(self, doc: Document, element):
+        """Process HTML element and add to document"""
+        if element.name == 'p':
+            para = doc.add_paragraph()
+            self._process_inline_content(para, element)
+        
+        elif element.name in ['h1', 'h2', 'h3', 'h4', 'h5', 'h6']:
+            level = int(element.name[1])
+            doc.add_heading(element.get_text(), level=level)
+        
+        elif element.name == 'pre':
+            # Code block
+            code = element.find('code')
+            if code:
+                code_text = code.get_text()
+                for line in code_text.split('\n'):
+                    doc.add_paragraph(line, style='CodeBlock')
+        
+        elif element.name == 'ul':
+            for li in element.find_all('li', recursive=False):
+                doc.add_paragraph(f'• {li.get_text()}', style='List Bullet')
+        
+        elif element.name == 'ol':
+            for i, li in enumerate(element.find_all('li', recursive=False), 1):
+                doc.add_paragraph(f'{i}. {li.get_text()}', style='List Number')
+        
+        elif element.name == 'table':
+            self._add_table(doc, element)
+        
+        elif element.name == 'blockquote':
+            para = doc.add_paragraph()
+            para.add_run('> ' + element.get_text()).italic = True
+        
+        elif hasattr(element, 'children'):
+            for child in element.children:
+                self._process_element(doc, child)
+    
+    def _process_inline_content(self, paragraph, element):
+        """Process inline content like bold, italic, links"""
+        for child in element.children:
+            if isinstance(child, str):
+                paragraph.add_run(child)
+            elif child.name == 'strong' or child.name == 'b':
+                paragraph.add_run(child.get_text()).bold = True
+            elif child.name == 'em' or child.name == 'i':
+                paragraph.add_run(child.get_text()).italic = True
+            elif child.name == 'code':
+                run = paragraph.add_run(child.get_text())
+                run.font.name = 'Consolas'
+                run.font.size = Pt(9)
+            elif child.name == 'a':
+                run = paragraph.add_run(child.get_text())
+                run.font.color.rgb = RGBColor(0, 0, 255)
+                run.underline = True
+    
+    def _add_table(self, doc: Document, table_element):
+        """Add table to document"""
+        rows = table_element.find_all('tr')
+        if not rows:
+            return
+        
+        # Count columns
+        cols = len(rows[0].find_all(['td', 'th']))
+        
+        # Create table
+        table = doc.add_table(rows=len(rows), cols=cols)
+        table.style = 'Light Grid Accent 1'
+        
+        # Fill table
+        for i, row in enumerate(rows):
+            cells = row.find_all(['td', 'th'])
+            for j, cell in enumerate(cells):
+                table.cell(i, j).text = cell.get_text().strip()
+```
+
+### Advanced Configuration
+
+```python
+# config.yaml for recursive docx generation
+recursive_docx:
+  # Starting point
+  start_file: "README.md"
+  
+  # Output settings
+  output:
+    filename: "project_documentation.docx"
+    include_timestamp: true
+    
+  # Crawling settings
+  crawling:
+    max_depth: 10
+    follow_external_links: false
+    timeout_seconds: 30
+    
+  # Exclusions
+  exclude:
+    patterns:
+      - "node_modules"
+      - ".git"
+      - "test/"
+      - "*.test.md"
+    files:
+      - "CONTRIBUTING.md"
+      - "LICENSE.md"
+      
+  # Document structure
+  structure:
+    include_toc: true
+    include_index: true
+    preserve_hierarchy: true
+    
+  # Formatting
+  formatting:
+    code_font: "Consolas"
+    body_font: "Arial"
+    heading_color: "1F4788"
+    link_color: "0563C1"
+    
+  # Advanced features
+  features:
+    process_diagrams: true
+    embed_images: true
+    convert_mermaid: true
+    include_metadata: true
+```
+
+### CLI Tool Implementation
+
+```python
+#!/usr/bin/env python3
+"""
+CLI tool for recursive DOCX generation
+"""
+
+import click
+import yaml
+from pathlib import Path
+from recursive_docx_generator import RecursiveDocxGenerator
+
+
+@click.command()
+@click.option('--start', '-s', default='README.md', help='Starting README file')
+@click.option('--output', '-o', default='documentation.docx', help='Output DOCX file')
+@click.option('--config', '-c', type=click.Path(exists=True), help='Configuration file')
+@click.option('--max-depth', '-d', default=10, help='Maximum recursion depth')
+@click.option('--exclude', '-e', multiple=True, help='Patterns to exclude')
+@click.option('--include-external', is_flag=True, help='Include external links')
+@click.option('--verbose', '-v', is_flag=True, help='Verbose output')
+def generate_docx(start, output, config, max_depth, exclude, include_external, verbose):
+    """Generate comprehensive DOCX from linked README files"""
+    
+    # Load configuration
+    if config:
+        with open(config, 'r') as f:
+            cfg = yaml.safe_load(f)
+            # Override with config values
+            start = cfg.get('start_file', start)
+            output = cfg.get('output', {}).get('filename', output)
+            max_depth = cfg.get('crawling', {}).get('max_depth', max_depth)
+            exclude = cfg.get('exclude', {}).get('patterns', list(exclude))
+            include_external = cfg.get('crawling', {}).get('follow_external_links', include_external)
+    
+    # Setup logging
+    if verbose:
+        import logging
+        logging.basicConfig(level=logging.DEBUG)
+    
+    # Create generator
+    generator = RecursiveDocxGenerator(
+        base_path='.',
+        max_depth=max_depth,
+        exclude_patterns=list(exclude),
+        include_external=include_external
+    )
+    
+    # Generate document
+    click.echo(f"Starting recursive DOCX generation from {start}")
+    try:
+        output_file = generator.generate(start, output)
+        click.echo(f"✓ Successfully generated: {output_file}")
+        
+        # Show statistics
+        stats = generator.get_statistics()
+        click.echo(f"  - Documents processed: {stats['total_documents']}")
+        click.echo(f"  - Total pages: {stats['estimated_pages']}")
+        click.echo(f"  - Links followed: {stats['links_followed']}")
+        
+    except Exception as e:
+        click.echo(f"✗ Error: {str(e)}", err=True)
+        raise click.Abort()
+
+
+if __name__ == '__main__':
+    generate_docx()
+```
+
+### Enhanced Features
+
+```python
+class EnhancedDocxGenerator(RecursiveDocxGenerator):
+    """Enhanced generator with additional features"""
+    
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.statistics = {
+            'total_documents': 0,
+            'total_words': 0,
+            'total_images': 0,
+            'total_code_blocks': 0,
+            'total_tables': 0,
+            'links_followed': 0,
+            'errors': []
+        }
+    
+    def _process_mermaid_diagrams(self, content: str) -> Tuple[str, List[str]]:
+        """Convert Mermaid diagrams to images"""
+        import subprocess
+        import tempfile
+        
+        mermaid_pattern = r'```mermaid\n(.*?)\n```'
+        diagrams = re.findall(mermaid_pattern, content, re.DOTALL)
+        
+        image_paths = []
+        for i, diagram in enumerate(diagrams):
+            with tempfile.NamedTemporaryFile(mode='w', suffix='.mmd', delete=False) as f:
+                f.write(diagram)
+                mmd_file = f.name
+            
+            png_file = f"{tempfile.gettempdir()}/diagram_{i}.png"
+            
+            try:
+                # Use mermaid CLI to generate image
+                subprocess.run([
+                    'mmdc', '-i', mmd_file, '-o', png_file,
+                    '-t', 'dark', '-b', 'transparent'
+                ], check=True)
+                
+                image_paths.append(png_file)
+                
+                # Replace in content
+                content = content.replace(
+                    f'```mermaid\n{diagram}\n```',
+                    f'![Diagram {i}]({png_file})'
+                )
+            except subprocess.CalledProcessError:
+                self.statistics['errors'].append(f"Failed to render Mermaid diagram {i}")
+            finally:
+                os.unlink(mmd_file)
+        
+        return content, image_paths
+    
+    def _add_metadata_page(self, doc: Document):
+        """Add metadata page with statistics"""
+        doc.add_heading('Document Metadata', level=1)
+        
+        # Statistics table
+        table = doc.add_table(rows=8, cols=2)
+        table.style = 'Light List Accent 1'
+        
+        stats = [
+            ('Total Documents', str(self.statistics['total_documents'])),
+            ('Total Words', f"{self.statistics['total_words']:,}"),
+            ('Total Images', str(self.statistics['total_images'])),
+            ('Code Blocks', str(self.statistics['total_code_blocks'])),
+            ('Tables', str(self.statistics['total_tables'])),
+            ('Links Followed', str(self.statistics['links_followed'])),
+            ('Generation Date', datetime.now().strftime('%Y-%m-%d %H:%M:%S')),
+            ('Errors', str(len(self.statistics['errors'])))
+        ]
+        
+        for i, (label, value) in enumerate(stats):
+            table.cell(i, 0).text = label
+            table.cell(i, 1).text = value
+        
+        # Error details if any
+        if self.statistics['errors']:
+            doc.add_heading('Generation Errors', level=2)
+            for error in self.statistics['errors']:
+                doc.add_paragraph(f'• {error}', style='List Bullet')
+        
+        doc.add_page_break()
+    
+    def _create_index(self, doc: Document):
+        """Create alphabetical index of all topics"""
+        doc.add_heading('Index', level=1)
+        
+        # Collect all headings
+        index_entries = []
+        
+        def collect_headings(node: DocumentNode):
+            if node.level > 0:
+                # Extract all headings from content
+                lines = node.content.split('\n')
+                for line in lines:
+                    if line.strip().startswith('#'):
+                        heading = line.strip().lstrip('#').strip()
+                        index_entries.append((heading, node.title))
+            
+            for child in node.children:
+                collect_headings(child)
+        
+        collect_headings(self.doc_tree)
+        
+        # Sort and add to document
+        index_entries.sort(key=lambda x: x[0].lower())
+        
+        current_letter = ''
+        for heading, source in index_entries:
+            first_letter = heading[0].upper()
+            if first_letter != current_letter:
+                current_letter = first_letter
+                doc.add_heading(current_letter, level=2)
+            
+            para = doc.add_paragraph()
+            para.add_run(f"{heading} ")
+            para.add_run(f"({source})").italic = True
+```
+
+### Integration Examples
+
+```python
+# GitHub Action for automatic documentation generation
+name: Generate Documentation
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  generate-docs:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.x'
+      
+      - name: Install dependencies
+        run: |
+          pip install python-docx markdown beautifulsoup4 pyyaml click requests
+          npm install -g @mermaid-js/mermaid-cli
+      
+      - name: Generate DOCX
+        run: |
+          python generate_recursive_docx.py \
+            --start README.md \
+            --output "docs/full_documentation_$(date +%Y%m%d).docx" \
+            --config docx-config.yaml \
+            --verbose
+      
+      - name: Upload artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: documentation
+          path: docs/*.docx
+```
+
+### Best Practices
+
+#### Do's
+- Set reasonable depth limits to prevent infinite recursion
+- Use exclude patterns to skip irrelevant directories
+- Cache processed documents to improve performance
+- Include progress indicators for large documentation sets
+- Validate links before following them
+- Handle different markdown flavors (GitHub, CommonMark, etc.)
+- Preserve document structure and hierarchy
+- Generate table of contents for navigation
+- Include metadata and generation statistics
+- Test with various README structures
+
+#### Don'ts
+- Don't follow external links by default (security risk)
+- Don't ignore circular reference detection
+- Don't process binary files as markdown
+- Don't lose formatting during conversion
+- Don't create overly large documents (>100MB)
+- Don't skip error handling for network requests
+- Don't forget to clean up temporary files
+- Don't hardcode styling preferences
+
+### Error Handling
+
+```python
+class RobustDocxGenerator(EnhancedDocxGenerator):
+    """Generator with comprehensive error handling"""
+    
+    def _safe_read_document(self, path: str) -> Optional[str]:
+        """Safely read document with multiple fallbacks"""
+        try:
+            # Try UTF-8 first
+            return self._read_document(path)
+        except UnicodeDecodeError:
+            # Try with different encodings
+            encodings = ['latin-1', 'cp1252', 'iso-8859-1']
+            for encoding in encodings:
+                try:
+                    if urlparse(path).scheme:
+                        response = requests.get(path)
+                        return response.content.decode(encoding)
+                    else:
+                        with open(path, 'r', encoding=encoding) as f:
+                            return f.read()
+                except:
+                    continue
+            
+            self.statistics['errors'].append(f"Failed to decode {path}")
+            return None
+        except requests.RequestException as e:
+            self.statistics['errors'].append(f"Network error for {path}: {e}")
+            return None
+        except FileNotFoundError:
+            self.statistics['errors'].append(f"File not found: {path}")
+            return None
+        except Exception as e:
+            self.statistics['errors'].append(f"Unexpected error for {path}: {e}")
+            return None
+    
+    def _handle_missing_links(self, doc: Document, missing_links: List[str]):
+        """Add appendix with missing links"""
+        if missing_links:
+            doc.add_heading('Appendix: Missing Links', level=1)
+            doc.add_paragraph(
+                'The following links could not be resolved during generation:'
+            )
+            
+            for link in missing_links:
+                doc.add_paragraph(f'• {link}', style='List Bullet')
+```
+
+This recursive DOCX generation rule provides a comprehensive framework for creating unified documentation from distributed README files.
+description:
+globs:
+alwaysApply: false
+---

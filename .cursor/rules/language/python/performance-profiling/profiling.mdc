@@ -1,0 +1,616 @@
+---
+alwaysApply: false
+description: Python performance profiling tools and techniques for optimization and
+  bottleneck detection
+globs:
+- '*.py'
+- profile_*.py
+- benchmark_*.py
+- '**/profiling/**'
+---
+
+# Python Performance Profiling Best Practices
+
+## Overview
+
+Performance profiling is crucial for identifying bottlenecks and optimizing Python applications. This guide covers comprehensive profiling techniques, tools, and best practices for both development and production environments.
+
+## Core Principles
+
+- Use cProfile and profile modules for comprehensive performance analysis
+- Implement line-by-line profiling with line_profiler for detailed insights
+- Use memory profiling tools like memory_profiler to identify memory bottlenecks
+- Apply timeit module for micro-benchmarking small code snippets
+- Use py-spy for profiling production applications without code changes
+- Implement proper benchmarking with statistical significance and multiple runs
+- Profile both CPU usage and memory consumption for complete analysis
+- Use flame graphs and visualization tools for performance data interpretation
+- Set up continuous performance monitoring for regression detection
+- Apply profiling-guided optimization with focus on actual bottlenecks
+
+## CPU Profiling
+
+### Using cProfile
+
+```python
+import cProfile
+import pstats
+from io import StringIO
+
+def profile_function(func):
+    """Decorator to profile a function"""
+    def wrapper(*args, **kwargs):
+        profiler = cProfile.Profile()
+        profiler.enable()
+        result = func(*args, **kwargs)
+        profiler.disable()
+        
+        # Print profiling results
+        stream = StringIO()
+        stats = pstats.Stats(profiler, stream=stream)
+        stats.sort_stats('cumulative')
+        stats.print_stats(20)  # Top 20 functions
+        print(stream.getvalue())
+        
+        return result
+    return wrapper
+
+# Usage example
+@profile_function
+def compute_intensive_task():
+    result = 0
+    for i in range(1000000):
+        result += i ** 2
+    return result
+
+# Command-line profiling
+# python -m cProfile -o output.prof script.py
+# python -m pstats output.prof
+```
+
+### Line-by-Line Profiling
+
+```python
+# Install: pip install line_profiler
+
+# Add @profile decorator to functions
+@profile
+def slow_function():
+    total = 0
+    for i in range(1000):
+        for j in range(1000):
+            total += i * j
+    return total
+
+# Run with: kernprof -l -v script.py
+
+# Alternative: programmatic usage
+from line_profiler import LineProfiler
+
+def analyze_line_by_line():
+    lp = LineProfiler()
+    lp.add_function(slow_function)
+    
+    # Run the function
+    lp.enable()
+    result = slow_function()
+    lp.disable()
+    
+    # Print results
+    lp.print_stats()
+    
+    return result
+```
+
+## Memory Profiling
+
+### Using memory_profiler
+
+```python
+# Install: pip install memory_profiler
+
+from memory_profiler import profile
+
+@profile
+def memory_intensive_function():
+    # Track memory line by line
+    a = [1] * (10 ** 6)
+    b = [2] * (2 * 10 ** 7)
+    del b
+    return a
+
+# Run with: python -m memory_profiler script.py
+
+# Programmatic memory usage tracking
+import tracemalloc
+
+def track_memory_usage():
+    tracemalloc.start()
+    
+    # Your code here
+    data = [i ** 2 for i in range(1000000)]
+    
+    current, peak = tracemalloc.get_traced_memory()
+    print(f"Current memory usage: {current / 10**6:.1f} MB")
+    print(f"Peak memory usage: {peak / 10**6:.1f} MB")
+    
+    tracemalloc.stop()
+    return data
+```
+
+### Memory Leak Detection
+
+```python
+import gc
+import objgraph
+
+class MemoryLeakDetector:
+    def __init__(self):
+        self.snapshots = []
+    
+    def take_snapshot(self, label=""):
+        """Take a memory snapshot"""
+        gc.collect()
+        snapshot = {
+            'label': label,
+            'objects': len(gc.get_objects()),
+            'garbage': len(gc.garbage)
+        }
+        self.snapshots.append(snapshot)
+        
+        # Show growth
+        if len(self.snapshots) > 1:
+            prev = self.snapshots[-2]
+            curr = self.snapshots[-1]
+            print(f"Memory growth ({prev['label']} -> {curr['label']}):")
+            print(f"  Objects: {curr['objects'] - prev['objects']:+d}")
+            print(f"  Garbage: {curr['garbage'] - prev['garbage']:+d}")
+    
+    def find_leaking_objects(self, limit=10):
+        """Find objects that are growing in number"""
+        objgraph.show_growth(limit=limit)
+        
+    def show_references(self, obj_type):
+        """Show reference chain for objects of given type"""
+        objgraph.show_chain(
+            objgraph.find_backref_chain(
+                objgraph.by_type(obj_type)[0],
+                objgraph.is_proper_module
+            ),
+            filename='chain.png'
+        )
+
+# Usage
+detector = MemoryLeakDetector()
+detector.take_snapshot("start")
+
+# Run potentially leaky code
+for i in range(1000):
+    create_objects()
+
+detector.take_snapshot("after loop")
+detector.find_leaking_objects()
+```
+
+## Micro-benchmarking
+
+### Using timeit
+
+```python
+import timeit
+import statistics
+
+def benchmark_comparison():
+    """Compare performance of different approaches"""
+    
+    # Setup code
+    setup = """
+import random
+data = [random.random() for _ in range(10000)]
+    """
+    
+    # Different sorting approaches
+    approaches = {
+        'sorted()': 'sorted(data)',
+        'list.sort()': 'data.copy(); data.sort()',
+        'manual bubble': '''
+copy = data.copy()
+n = len(copy)
+for i in range(n):
+    for j in range(0, n-i-1):
+        if copy[j] > copy[j+1]:
+            copy[j], copy[j+1] = copy[j+1], copy[j]
+        '''
+    }
+    
+    # Run benchmarks
+    results = {}
+    for name, code in approaches.items():
+        times = timeit.repeat(
+            code,
+            setup=setup,
+            repeat=5,
+            number=100
+        )
+        results[name] = {
+            'mean': statistics.mean(times),
+            'stdev': statistics.stdev(times),
+            'min': min(times),
+            'max': max(times)
+        }
+    
+    # Print results
+    print("Performance Comparison:")
+    print("-" * 50)
+    for name, stats in sorted(results.items(), key=lambda x: x[1]['mean']):
+        print(f"{name:15} {stats['mean']:.4f}s ± {stats['stdev']:.4f}s")
+    
+    return results
+
+# Context manager for timing
+from contextlib import contextmanager
+import time
+
+@contextmanager
+def timer(name="Operation"):
+    start = time.perf_counter()
+    yield
+    elapsed = time.perf_counter() - start
+    print(f"{name} took {elapsed:.4f} seconds")
+
+# Usage
+with timer("Data processing"):
+    process_large_dataset()
+```
+
+## Production Profiling
+
+### Using py-spy
+
+```python
+# Install: pip install py-spy
+
+# Profile running Python process without modifying code
+# sudo py-spy record -o profile.svg --pid <PID>
+# py-spy top --pid <PID>
+
+# Sampling profiler wrapper
+import subprocess
+import os
+import signal
+import atexit
+
+class ProductionProfiler:
+    def __init__(self, output_file="profile.svg"):
+        self.output_file = output_file
+        self.process = None
+        
+    def start(self):
+        """Start profiling current process"""
+        pid = os.getpid()
+        self.process = subprocess.Popen([
+            'py-spy', 'record',
+            '-o', self.output_file,
+            '--pid', str(pid),
+            '--format', 'flamegraph'
+        ])
+        atexit.register(self.stop)
+        
+    def stop(self):
+        """Stop profiling"""
+        if self.process:
+            self.process.terminate()
+            self.process.wait()
+            print(f"Profile saved to {self.output_file}")
+
+# Usage
+profiler = ProductionProfiler()
+profiler.start()
+
+# Your application code here
+run_application()
+
+profiler.stop()
+```
+
+## Visualization and Analysis
+
+### Flame Graph Generation
+
+```python
+import flamegraph
+import cProfile
+import pstats
+
+def generate_flame_graph(func, output_file="flame.svg"):
+    """Generate flame graph for function execution"""
+    
+    # Profile the function
+    profiler = cProfile.Profile()
+    profiler.enable()
+    result = func()
+    profiler.disable()
+    
+    # Convert to flame graph
+    stats = pstats.Stats(profiler)
+    
+    # Manual flame graph data preparation
+    flame_data = []
+    for (filename, line, funcname), (cc, nc, tt, ct, callers) in stats.stats.items():
+        stack = f"{filename}:{line}:{funcname}"
+        flame_data.append(f"{stack} {int(tt * 1000000)}")
+    
+    # Write flame graph data
+    with open("flame.txt", "w") as f:
+        f.write("\n".join(flame_data))
+    
+    # Generate SVG (requires flamegraph.pl)
+    import subprocess
+    subprocess.run([
+        "flamegraph.pl",
+        "flame.txt",
+        "--title", "CPU Flame Graph",
+        "--width", "1200",
+        "-o", output_file
+    ])
+    
+    return result
+```
+
+### Performance Dashboard
+
+```python
+import time
+import statistics
+from collections import deque, defaultdict
+from datetime import datetime
+
+class PerformanceMonitor:
+    def __init__(self, window_size=100):
+        self.window_size = window_size
+        self.metrics = defaultdict(lambda: deque(maxlen=window_size))
+        self.timestamps = defaultdict(list)
+        
+    def record(self, metric_name, value):
+        """Record a performance metric"""
+        self.metrics[metric_name].append(value)
+        self.timestamps[metric_name].append(datetime.now())
+        
+    def time_operation(self, operation_name):
+        """Context manager to time operations"""
+        class Timer:
+            def __init__(timer_self):
+                timer_self.start = None
+                
+            def __enter__(timer_self):
+                timer_self.start = time.perf_counter()
+                return timer_self
+                
+            def __exit__(timer_self, *args):
+                elapsed = time.perf_counter() - timer_self.start
+                self.record(operation_name, elapsed)
+                
+        return Timer()
+    
+    def get_stats(self, metric_name):
+        """Get statistics for a metric"""
+        values = list(self.metrics[metric_name])
+        if not values:
+            return None
+            
+        return {
+            'count': len(values),
+            'mean': statistics.mean(values),
+            'median': statistics.median(values),
+            'stdev': statistics.stdev(values) if len(values) > 1 else 0,
+            'min': min(values),
+            'max': max(values),
+            'p95': statistics.quantiles(values, n=20)[18] if len(values) > 1 else values[0],
+            'p99': statistics.quantiles(values, n=100)[98] if len(values) > 1 else values[0]
+        }
+    
+    def print_report(self):
+        """Print performance report"""
+        print("\nPerformance Report")
+        print("=" * 80)
+        
+        for metric_name, values in self.metrics.items():
+            stats = self.get_stats(metric_name)
+            if stats:
+                print(f"\n{metric_name}:")
+                print(f"  Samples: {stats['count']}")
+                print(f"  Mean: {stats['mean']:.4f}s")
+                print(f"  Median: {stats['median']:.4f}s")
+                print(f"  Std Dev: {stats['stdev']:.4f}s")
+                print(f"  Min/Max: {stats['min']:.4f}s / {stats['max']:.4f}s")
+                print(f"  P95/P99: {stats['p95']:.4f}s / {stats['p99']:.4f}s")
+
+# Usage
+monitor = PerformanceMonitor()
+
+# Time different operations
+for i in range(100):
+    with monitor.time_operation("database_query"):
+        query_database()
+        
+    with monitor.time_operation("api_call"):
+        call_external_api()
+        
+    with monitor.time_operation("data_processing"):
+        process_data()
+
+monitor.print_report()
+```
+
+## Continuous Performance Testing
+
+### Benchmark Suite
+
+```python
+import pytest
+import pytest_benchmark
+
+class BenchmarkSuite:
+    """Performance regression test suite"""
+    
+    @pytest.mark.benchmark(group="sorting")
+    def test_sort_performance(self, benchmark):
+        """Benchmark sorting performance"""
+        import random
+        data = [random.random() for _ in range(10000)]
+        
+        result = benchmark(sorted, data)
+        assert len(result) == len(data)
+        assert all(result[i] <= result[i+1] for i in range(len(result)-1))
+    
+    @pytest.mark.benchmark(group="string")
+    def test_string_concatenation(self, benchmark):
+        """Compare string concatenation methods"""
+        strings = ['hello'] * 1000
+        
+        def concat_with_plus():
+            result = ''
+            for s in strings:
+                result = result + s
+            return result
+        
+        def concat_with_join():
+            return ''.join(strings)
+        
+        # Benchmark both approaches
+        if hasattr(benchmark, 'name'):
+            if 'plus' in benchmark.name:
+                result = benchmark(concat_with_plus)
+            else:
+                result = benchmark(concat_with_join)
+        else:
+            result = benchmark(concat_with_join)
+            
+        assert len(result) == 5000
+
+# Run with: pytest --benchmark-only --benchmark-compare
+```
+
+## Best Practices
+
+### Do's
+- Profile before optimizing - measure don't guess
+- Focus on hot paths identified by profiling
+- Use appropriate profiler for the task (CPU vs memory)
+- Profile in conditions similar to production
+- Keep performance benchmarks in CI/CD pipeline
+- Document performance characteristics and requirements
+- Use statistical analysis for benchmarking
+
+### Don'ts
+- Don't optimize prematurely
+- Don't profile in debug mode
+- Don't ignore memory profiling
+- Don't rely on single benchmark runs
+- Don't profile with unrealistic data sizes
+- Don't forget about I/O bound operations
+
+This comprehensive guide ensures effective performance profiling and optimization strategies for Python applications.
+
+# Profiling Best Practices
+
+
+## Installation and Setup
+
+### Basic Installation
+
+```bash
+pip install profiling
+```
+
+### Import and Basic Usage
+
+```python
+import profiling
+
+# Initialize
+client = profiling.Client()
+
+# Basic operation
+result = client.process(data)
+print(result)
+```
+
+## Code Examples
+
+### Example 1: Basic Usage
+
+```python
+# Profiling basic example
+from profiling import main_function
+
+# Process data
+data = ["item1", "item2", "item3"]
+results = main_function(data)
+
+for result in results:
+    print(f"Processed: {result}")
+```
+
+### Example 2: Advanced Features
+
+```python
+# Advanced configuration
+config = {
+    'timeout': 30,
+    'retry_count': 3,
+    'verbose': True
+}
+
+# Create configured instance
+instance = profiling.create(**config)
+
+# Use advanced features
+with instance.context() as ctx:
+    output = ctx.advanced_operation(
+        input_data=data,
+        options={'parallel': True}
+    )
+```
+
+## Advanced Topics
+
+### Performance Optimization
+
+When working with Profiling, consider these optimization strategies:
+- Cache frequently accessed data
+- Use batch operations where possible
+- Implement connection pooling
+- Monitor resource usage
+- Profile code to identify bottlenecks
+
+### Troubleshooting Guide
+
+Common issues and solutions:
+
+1. **Issue**: Configuration not loading
+   **Solution**: Check file paths and permissions
+
+2. **Issue**: Performance degradation
+   **Solution**: Review logs and increase resource limits
+
+3. **Issue**: Integration failures
+   **Solution**: Verify API versions and compatibility
+
+### Additional Resources
+
+- [Official Documentation](#)
+- [Community Forum](#)
+- [GitHub Repository](#)
+- [Tutorial Videos](#)
+- [Best Practices Guide](#)
+
+### Contributing
+
+Contributions are welcome! Please:
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Submit a pull request
+
+For more details, see CONTRIBUTING.md

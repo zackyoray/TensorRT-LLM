@@ -1,0 +1,44 @@
+---
+description: "Guidelines for effective logging in Spring Boot applications. Incorporates SonarQube's directives on logging best practices."
+globs: ["src/main/java/**/*.java"]
+alwaysApply: false
+---
+
+# Java Spring Boot Logging Guidelines
+
+- **Use SLF4J:** Always use SLF4J (Simple Logging Facade for Java) with Logback (Spring Boot's default). Do not use direct `System.out.println()`. (SonarQube: Flags direct `System.out.println()`).
+- **Choose Correct Level:**
+    - `INFO`: For significant application events (startup, shutdown, major operations).
+    - `DEBUG`: For detailed information useful for debugging.
+    - `WARN`: For potentially problematic situations that are not errors but should be noted.
+    - `ERROR`: For unrecoverable errors or exceptions.
+    - `TRACE`: For very fine-grained, detailed debugging.
+- **Meaningful Messages:** Log clear, concise, and contextual messages. Include relevant variables or IDs.
+- **Parameterized Logging:** Use parameterized messages to avoid string concatenation overhead, especially for `DEBUG`/`TRACE` levels (e.g., `logger.debug("Processing user: {}", userId);`).
+- **Avoid Sensitive Data:** Do not log sensitive information (passwords, credit card numbers, PII) to avoid security vulnerabilities. (SonarQube: Detects logging of sensitive information).
+- **Log at Boundaries:** Log at service and controller boundaries to trace request flow.
+
+<rule>
+  <name>java_spring_boot_logging_guidelines</name>
+  <description>Guidelines for effective logging in Spring Boot applications.</description>
+  <requirements>
+    <requirement priority="critical">
+      <description>Always use SLF4J with Logback; avoid direct System.out.println().</description>
+    </requirement>
+    <requirement priority="high">
+      <description>Choose the correct logging level (INFO, DEBUG, WARN, ERROR, TRACE) based on message significance.</description>
+    </requirement>
+    <requirement priority="high">
+      <description>Log clear, concise, and contextual messages, including relevant variables or IDs.</description>
+    </requirement>
+    <requirement priority="high">
+      <description>Use parameterized messages to avoid string concatenation overhead, especially for DEBUG/TRACE levels.</description>
+    </requirement>
+    <requirement priority="critical">
+      <description>Do not log sensitive information (passwords, credit card numbers, PII) to avoid security vulnerabilities.</description>
+    </requirement>
+    <requirement priority="medium">
+      <description>Log at service and controller boundaries to trace request flow.</description>
+    </requirement>
+  </requirements>
+</rule>

@@ -1,0 +1,287 @@
+---
+description: Enforces Poetry as the standard Python dependency management tool
+globs: 
+alwaysApply: true
+---
+
+# Python Dependency Management with Poetry
+
+## Critical Override Rule
+
+**OVERRIDE WORKSPACE UV RULE**: Use Poetry instead of uv for all Python dependency management.
+
+## Required Commands
+
+- **Install dependencies**: `poetry install`
+- **Add new library**: `poetry add library-name`
+- **Add dev dependency**: `poetry add --group dev library-name`
+- **Run scripts**: `poetry run python script.py`
+- **Activate shell**: `poetry shell`
+- **Build package**: `poetry build`
+- **Update dependencies**: `poetry update`
+
+## Never Use
+
+- ❌ `uv add library` 
+- ❌ `uv run script.py`
+- ❌ `pip install`
+- ❌ `requirements.txt` files
+- ❌ Manual virtual environment creation
+
+## Required Files
+
+Every Python project MUST include:
+- `pyproject.toml` - Project configuration and dependencies
+- `poetry.lock` - Locked dependency versions (commit to git)
+
+## Project Initialization
+
+<example>
+# For new projects
+poetry new my-project
+cd my-project
+
+# For existing projects  
+poetry init
+poetry install
+
+# Project structure should be:
+my-project/
+├── pyproject.toml      # Dependencies and project config
+├── poetry.lock         # Locked versions
+├── README.md
+├── my_project/         # Source code
+│   └── __init__.py
+└── tests/              # Test files
+    └── __init__.py
+</example>
+
+## Dependency Management Examples
+
+<example>
+# Add production dependencies
+poetry add requests
+poetry add pydantic
+poetry add typer
+poetry add rich
+
+# Add development dependencies
+poetry add --group dev pytest
+poetry add --group dev black
+poetry add --group dev pylint
+poetry add --group dev mypy
+
+# Add optional dependencies for specific features
+poetry add --optional prometheus-client
+poetry add --optional grafana-api
+
+# Kubernetes/OpenShift specific dependencies
+poetry add kubernetes
+poetry add openshift-client
+poetry add pyyaml
+</example>
+
+## pyproject.toml Configuration
+
+<example>
+[tool.poetry]
+name = "platform-admin-tools"
+version = "0.1.0"
+description = "OpenShift platform administration utilities"
+authors = ["Platform Team <platform@company.com>"]
+readme = "README.md"
+packages = [{include = "platform_tools"}]
+
+[tool.poetry.dependencies]
+python = "^3.11"
+kubernetes = "^28.1.0"
+pyyaml = "^6.0"
+requests = "^2.31.0"
+typer = "^0.9.0"
+rich = "^13.7.0"
+pydantic = "^2.5.0"
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^7.4.0"
+black = "^23.12.0"
+pylint = "^3.0.0"
+mypy = "^1.8.0"
+
+[tool.poetry.group.test.dependencies]
+pytest-cov = "^4.1.0"
+pytest-mock = "^3.12.0"
+
+[tool.poetry.scripts]
+platform-check = "platform_tools.cli:health_check"
+namespace-cleanup = "platform_tools.cleanup:main"
+deploy-monitor = "platform_tools.deploy:monitor"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+</example>
+
+## Virtual Environment Management
+
+Poetry automatically manages virtual environments:
+
+<example>
+# Install dependencies and create/activate venv
+poetry install
+
+# Run commands in the virtual environment
+poetry run python script.py
+poetry run pytest
+poetry run black .
+poetry run pylint src/
+
+# Activate shell with virtual environment
+poetry shell
+
+# Show virtual environment info
+poetry env info
+poetry env list
+
+# Remove virtual environment
+poetry env remove python
+</example>
+
+## Platform Administration Workflow
+
+<example>
+# 1. Create new platform tool
+poetry new openshift-backup-tool
+cd openshift-backup-tool
+
+# 2. Add OpenShift/Kubernetes dependencies
+poetry add kubernetes openshift-client pyyaml typer rich
+
+# 3. Add development tools
+poetry add --group dev pytest black pylint mypy
+
+# 4. Create your tool
+poetry run python -m backup_tool --help
+
+# 5. Install in editable mode for development
+poetry install
+
+# 6. Run tests
+poetry run pytest
+
+# 7. Format and lint code
+poetry run black .
+poetry run pylint backup_tool/
+
+# 8. Build for distribution
+poetry build
+</example>
+
+## Integration with CI/CD
+
+<example>
+# In GitHub Actions or GitLab CI
+name: Test and Build
+on: [push, pull_request]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+        
+    - name: Install Poetry
+      uses: snok/install-poetry@v1
+      with:
+        version: latest
+        
+    - name: Install dependencies
+      run: poetry install
+      
+    - name: Run tests
+      run: poetry run pytest --cov=.
+      
+    - name: Lint code
+      run: |
+        poetry run black --check .
+        poetry run pylint src/
+        
+    - name: Build package
+      run: poetry build
+</example>
+
+## Best Practices
+
+### Dependency Groups
+- **main**: Production dependencies only
+- **dev**: Development tools (black, pylint, mypy)
+- **test**: Testing frameworks and utilities  
+- **docs**: Documentation generation tools
+- **optional**: Optional features that can be installed separately
+
+### Lock File Management
+- **Always commit** `poetry.lock` to version control
+- **Use `poetry install`** on CI/CD and deployment
+- **Use `poetry update`** carefully - test before committing updates
+- **Pin critical dependencies** with exact versions when needed
+
+### Version Constraints
+- Use **caret requirements** (`^1.2.3`) for libraries you control
+- Use **tilde requirements** (`~1.2.3`) for more conservative updates
+- **Pin exact versions** for critical infrastructure dependencies
+
+## Security Considerations
+
+<example>
+# Audit dependencies for vulnerabilities
+poetry run pip-audit
+
+# Check for outdated packages
+poetry show --outdated
+
+# Update specific packages
+poetry update requests
+
+# Export requirements for security scanning
+poetry export -f requirements.txt --output requirements.txt --without-hashes
+</example>
+
+## Platform-Specific Commands
+
+<example>
+# OpenShift/Kubernetes tools setup
+poetry add kubernetes openshift-client
+poetry add --group dev kubectl-validate
+
+# Data processing for logs/metrics
+poetry add pandas numpy
+
+# CLI and visualization
+poetry add typer rich plotly
+
+# Configuration management
+poetry add pydantic pyyaml python-dotenv
+
+# Monitoring and alerting
+poetry add prometheus-client requests
+
+# Create platform admin CLI
+poetry run python -c "
+import typer
+app = typer.Typer()
+
+@app.command()
+def cluster_health():
+    '''Check OpenShift cluster health'''
+    typer.echo('Checking cluster health...')
+
+if __name__ == '__main__':
+    app()
+"
+</example>
+
+This rule ensures all Python development uses Poetry's modern dependency management, replacing the workspace uv configuration with a more robust solution suitable for platform administration work.

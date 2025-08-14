@@ -1,0 +1,49 @@
+---
+description: "Guidelines for idiomatic Java exception handling in Spring Boot applications. Addresses SonarQube's common reliability and maintainability rules related to exceptions."
+globs: ["src/main/java/**/*.java"]
+alwaysApply: false
+---
+
+# Java Spring Boot Exception Handling Guidelines
+
+- **Checked vs. Unchecked Exceptions:**
+    - Use checked exceptions for *recoverable* errors where the caller is expected to handle them.
+    - Use unchecked (runtime) exceptions for *programming errors* or *unrecoverable* system failures.
+- **Custom Domain Exceptions:** Create custom exception classes for domain-specific business errors (e.g., `UserNotFoundException`, `InsufficientFundsException`).
+- **Global Exception Handling:** Leverage Spring's `@ControllerAdvice` and `@ExceptionHandler` annotations for centralized, consistent error responses in REST APIs.
+- **Logging Exceptions:** Always log exceptions at appropriate levels (e.g., `ERROR` for unhandled, `WARN` for handled but problematic). Include stack traces for debugging. (SonarQube: Flags ignored exceptions, logging issues).
+- **Avoid Catching Generic `Exception`:** Do not catch `java.lang.Exception` indiscriminately. Catch specific exceptions where possible. (SonarQube: "Catch all exceptions" is a code smell).
+- **Wrap Exceptions with Context:** When re-throwing, wrap the original exception to add context relevant to the current layer (e.g., `throw new ServiceException("Failed to process user creation", e);`).
+- **Avoid Empty Catch Blocks:** Never use empty `catch` blocks. If an exception is intentionally ignored, provide a clear comment explaining why. (SonarQube: "Empty catch block" is a major code smell).
+- **Resource Management:** Ensure resources (e.g., `InputStream`, `OutputStream`, `Connection`) are properly closed, ideally using try-with-resources. (SonarQube: Resource leaks detection).
+
+<rule>
+  <name>java_spring_boot_exception_handling_guidelines</name>
+  <description>Guidelines for idiomatic Java exception handling in Spring Boot applications.</description>
+  <requirements>
+    <requirement priority="high">
+      <description>Use checked exceptions for recoverable errors and unchecked for programming errors.</description>
+    </requirement>
+    <requirement priority="high">
+      <description>Create custom exception classes for domain-specific business errors.</description>
+    </requirement>
+    <requirement priority="high">
+      <description>Leverage Spring's @ControllerAdvice and @ExceptionHandler for global exception handling.</description>
+    </requirement>
+    <requirement priority="high">
+      <description>Always log exceptions at appropriate levels (INFO, DEBUG, WARN, ERROR, TRACE) with stack traces.</description>
+    </requirement>
+    <requirement priority="critical">
+      <description>Avoid catching generic `java.lang.Exception` indiscriminately; catch specific exceptions.</description>
+    </requirement>
+    <requirement priority="medium">
+      <description>Wrap original exceptions with context when re-throwing.</description>
+    </requirement>
+    <requirement priority="critical">
+      <description>Never use empty catch blocks; provide clear comments if an exception is intentionally ignored.</description>
+    </requirement>
+    <requirement priority="high">
+      <description>Ensure resources are properly closed, ideally using try-with-resources.</description>
+    </requirement>
+  </requirements>
+</rule>

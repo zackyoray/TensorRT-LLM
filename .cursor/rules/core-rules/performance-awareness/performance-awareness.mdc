@@ -1,0 +1,227 @@
+---
+description: Ensures all generated code considers performance implications and follows optimization best practices
+globs: 
+alwaysApply: true
+---
+
+# Performance Awareness Standards
+
+## Critical Rules
+
+- ALWAYS consider performance implications before implementation
+- MEASURE performance impact, don't guess or assume
+- OPTIMIZE only when necessary - avoid premature optimization
+- DOCUMENT performance-critical decisions and trade-offs
+- CHOOSE appropriate data structures and algorithms for the use case
+- CONSIDER memory usage alongside execution speed
+- IMPLEMENT caching strategies where beneficial
+- AVOID unnecessary computations and redundant operations
+
+## Performance Principles
+
+### Algorithm Selection
+- **Know Your Complexity**: Understand Big O notation for time and space
+- **Match Scale to Solution**: Use appropriate algorithms for data size
+- **Consider Real-World Performance**: Big O isn't everything - constants matter
+- **Profile Before Optimizing**: Measure actual bottlenecks
+
+### Common Performance Patterns
+
+<example>
+# GOOD - Efficient lookup with proper data structure
+class UserCache:
+    def __init__(self):
+        self._users = {}  # O(1) lookup
+        self._lru_queue = collections.deque(maxlen=1000)
+    
+    def get_user(self, user_id: str) -> Optional[User]:
+        if user_id in self._users:
+            # Move to end for LRU
+            self._lru_queue.remove(user_id)
+            self._lru_queue.append(user_id)
+            return self._users[user_id]
+        
+        user = self._fetch_from_db(user_id)
+        self._add_to_cache(user_id, user)
+        return user
+</example>
+
+<example type="invalid">
+# BAD - Inefficient nested loops
+def find_common_items(list1, list2):
+    common = []
+    for item1 in list1:  # O(n)
+        for item2 in list2:  # O(m)
+            if item1 == item2:
+                common.append(item1)
+    return common  # Total: O(n*m)
+
+# Should use set intersection: O(n+m)
+# common = list(set(list1) & set(list2))
+</example>
+
+## Memory Efficiency
+
+### Memory-Conscious Patterns
+- **Use Generators**: For large sequences that don't need to be in memory
+- **Chunk Processing**: Handle large datasets in manageable pieces
+- **Resource Cleanup**: Explicitly close files, connections, and large objects
+- **Avoid Memory Leaks**: Be careful with circular references and closures
+
+<example>
+# GOOD - Memory-efficient file processing
+def process_large_file(filename: str):
+    with open(filename, 'r') as f:
+        for line in f:  # Generator - one line at a time
+            yield process_line(line)
+
+# BAD - Loads entire file into memory
+def process_large_file_bad(filename: str):
+    with open(filename, 'r') as f:
+        lines = f.readlines()  # All lines in memory
+    return [process_line(line) for line in lines]
+</example>
+
+## Database Performance
+
+### Query Optimization
+- **Use Indexes**: Ensure queries use appropriate indexes
+- **Avoid N+1 Queries**: Use joins or batch fetching
+- **Limit Result Sets**: Use pagination and filtering
+- **Cache Frequent Queries**: Implement query result caching
+
+<example>
+# GOOD - Batch fetching to avoid N+1
+def get_orders_with_items(order_ids: List[int]):
+    # Fetch all orders
+    orders = Order.objects.filter(id__in=order_ids)
+    
+    # Fetch all items in one query
+    order_items = OrderItem.objects.filter(
+        order_id__in=order_ids
+    ).select_related('product')
+    
+    # Group items by order
+    items_by_order = defaultdict(list)
+    for item in order_items:
+        items_by_order[item.order_id].append(item)
+    
+    # Combine results
+    for order in orders:
+        order.items = items_by_order[order.id]
+    
+    return orders
+</example>
+
+## Caching Strategies
+
+### When to Cache
+- **Expensive Computations**: Results that take significant time to calculate
+- **Frequent Access**: Data accessed multiple times
+- **Stable Data**: Information that doesn't change frequently
+- **External API Calls**: Reduce network latency and API limits
+
+<example>
+# Intelligent caching with TTL
+from functools import lru_cache
+from datetime import datetime, timedelta
+
+class CachedDataService:
+    def __init__(self, ttl_seconds=300):
+        self._cache = {}
+        self._ttl = timedelta(seconds=ttl_seconds)
+    
+    def get_data(self, key: str) -> Any:
+        if key in self._cache:
+            value, timestamp = self._cache[key]
+            if datetime.now() - timestamp < self._ttl:
+                return value
+        
+        # Cache miss or expired
+        value = self._fetch_fresh_data(key)
+        self._cache[key] = (value, datetime.now())
+        return value
+    
+    @lru_cache(maxsize=128)
+    def expensive_calculation(self, param: str) -> int:
+        # Automatic memoization for pure functions
+        return sum(ord(c) ** 2 for c in param)
+</example>
+
+## Asynchronous Performance
+
+### Concurrent Operations
+- **Use Async/Await**: For I/O-bound operations
+- **Thread Pools**: For CPU-bound parallel tasks
+- **Batch Operations**: Group related operations
+- **Connection Pooling**: Reuse expensive connections
+
+<example>
+# GOOD - Concurrent API calls
+import asyncio
+import aiohttp
+
+async def fetch_user_data(session, user_id):
+    async with session.get(f'/api/users/{user_id}') as response:
+        return await response.json()
+
+async def get_multiple_users(user_ids: List[int]):
+    async with aiohttp.ClientSession() as session:
+        tasks = [fetch_user_data(session, uid) for uid in user_ids]
+        return await asyncio.gather(*tasks)
+</example>
+
+## Performance Monitoring
+
+### Key Metrics to Track
+- **Response Time**: 95th and 99th percentile latencies
+- **Throughput**: Requests/operations per second
+- **Resource Usage**: CPU, memory, disk I/O
+- **Error Rates**: Failed operations percentage
+- **Queue Lengths**: Backlog and processing delays
+
+### Performance Budgets
+```python
+# Define performance requirements
+PERFORMANCE_BUDGETS = {
+    'api_response_time_p95': 200,  # ms
+    'database_query_time_p99': 50,  # ms
+    'memory_usage_max': 512,  # MB
+    'cpu_usage_avg': 70,  # percent
+}
+
+# Monitor and alert on violations
+@performance_monitor
+def critical_operation():
+    with timer('critical_operation'):
+        # Implementation here
+        pass
+```
+
+## Common Performance Anti-Patterns
+
+### Things to Avoid
+- **Premature Optimization**: Optimizing before measuring
+- **Micro-Optimizations**: Focusing on negligible improvements
+- **Cache Everything**: Over-caching can waste memory
+- **Ignoring Database Queries**: Most performance issues are data access
+- **Synchronous Everything**: Not utilizing async capabilities
+- **Unbounded Growth**: Collections without size limits
+
+## Performance Testing
+
+### Load Testing Considerations
+```python
+# Include performance tests
+def test_bulk_processing_performance():
+    items = generate_test_items(10000)
+    
+    start_time = time.time()
+    results = process_items_bulk(items)
+    duration = time.time() - start_time
+    
+    assert duration < 5.0  # Should complete in 5 seconds
+    assert len(results) == len(items)
+```
+
+This rule ensures all generated code is performance-conscious without falling into premature optimization traps.
