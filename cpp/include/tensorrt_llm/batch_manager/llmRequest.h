@@ -26,10 +26,13 @@
 #include "tensorrt_llm/runtime/samplingConfig.h"
 
 #include <algorithm>
+#include <atomic>
 #include <cassert>
 #include <chrono>
+#include <condition_variable>
 #include <cstdint>
 #include <memory>
+#include <mutex>
 #include <optional>
 #include <utility>
 #include <vector>
@@ -1600,6 +1603,59 @@ public:
         return mDecodingIter;
     }
 
+    // Early responding synchronization methods
+    void setEarlyRespondingStarted(bool value)
+    {
+        mEarlyRespondingStarted.store(value, std::memory_order_release);
+    }
+
+    [[nodiscard]] bool hasEarlyRespondingStarted() const
+    {
+        return mEarlyRespondingStarted.load(std::memory_order_acquire);
+    }
+
+    // Context completion signaling
+    void signalContextFinished()
+    {
+        {
+            std::lock_guard<std::mutex> lock(mContextFinishedMutex);
+            mContextComputeFinished.store(true, std::memory_order_release);
+        }
+        mContextFinishedCv.notify_all();
+        TLLM_LOG_DEBUG("Request %lu: Context computation finished", mRequestId);
+    }
+
+    void waitForContextFinished()
+    {
+        std::unique_lock<std::mutex> lock(mContextFinishedMutex);
+        mContextFinishedCv.wait(lock, [this] {
+            return mContextComputeFinished.load(std::memory_order_acquire);
+        });
+        TLLM_LOG_DEBUG("Request %lu: Context finish wait completed", mRequestId);
+    }
+
+    [[nodiscard]] bool waitForContextFinished(std::chrono::milliseconds timeout)
+    {
+        std::unique_lock<std::mutex> lock(mContextFinishedMutex);
+        bool result = mContextFinishedCv.wait_for(lock, timeout, [this] {
+            return mContextComputeFinished.load(std::memory_order_acquire);
+        });
+        if (!result)
+        {
+            TLLM_LOG_WARNING("Request %lu: Timeout waiting for context completion after %lld ms",
+                mRequestId, static_cast<long long>(timeout.count()));
+        }
+        return result;
+    }
+
+    [[nodiscard]] bool isContextFinished() const
+    {
+        return mContextComputeFinished.load(std::memory_order_acquire);
+    }
+
+    // Reset synchronization state (for error recovery)
+    void resetEarlyRespondingState();
+
     /// Increment the counter of decoding iterations.
     void advanceDecodingIter()
     {
@@ -2038,6 +2094,11 @@ protected:
     bool mIsDummyRequest{false};
 
     bool mUseDraftModel{false};
+    // Early responding synchronization
+    std::atomic<bool> mEarlyRespondingStarted{false};
+    mutable std::mutex mContextFinishedMutex;
+    std::condition_variable mContextFinishedCv;
+    std::atomic<bool> mContextComputeFinished{false};
 
 private:
     void initialize(VecTokens const& inputTokens, bool outputLogProbs)
