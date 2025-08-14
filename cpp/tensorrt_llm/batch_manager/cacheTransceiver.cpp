@@ -18,6 +18,7 @@
 #include "tensorrt_llm/executor/cache_transmission/agent_utils/connection.h"
 #include "tensorrt_llm/executor/types.h"
 #include <cstdint>
+#include <cstdlib>
 #include <limits>
 #include <sstream>
 #define UCX_WRAPPER_LIB_NAME "tensorrt_llm_ucx_wrapper"
@@ -235,12 +236,66 @@ void CacheTransceiver::setContextState(LlmRequest* llmRequest)
     }
 }
 
+void CacheTransceiver::respondAndSendAsyncEarly(LlmRequest* llmRequest)
+{
+    TLLM_LOG_TRACE("%s start", __PRETTY_FUNCTION__);
+    TLLM_CHECK(llmRequest && llmRequest->isContextOnlyRequest());
+
+    // Check if early responding is enabled
+    if (!isEarlyRespondingEnabled())
+    {
+        TLLM_LOG_DEBUG("Early responding disabled, skipping for request %lu", llmRequest->mRequestId);
+        return;
+    }
+
+    // Check if already started
+    if (llmRequest->hasEarlyRespondingStarted())
+    {
+        TLLM_LOG_WARNING("Early responding already started for request %lu", llmRequest->mRequestId);
+        return;
+    }
+
+    // Check if layer-wise transfer is in progress
+    if (llmRequest->getContextProgress() != nullptr)
+    {
+        TLLM_LOG_WARNING("Skipping early responding for layer-wise request %lu", llmRequest->mRequestId);
+        return;
+    }
+
+    // Set the context state early
+    setContextState(llmRequest);
+
+    // Mark that early responding has started
+    llmRequest->setEarlyRespondingStarted(true);
+
+    // Do NOT change request state to kDISAGG_CONTEXT_TRANS_IN_PROGRESS yet
+    // That will be done when context actually finishes
+
+    // Start the responder thread which will wait
+    auto future = mDataResponder->respondAndSendAsync(*llmRequest);
+    mResponderFutures.emplace_back(llmRequest, std::move(future));
+
+    TLLM_LOG_DEBUG("Early responding started for request %lu", llmRequest->mRequestId);
+    TLLM_LOG_TRACE("%s stop", __PRETTY_FUNCTION__);
+}
+
 void CacheTransceiver::respondAndSendAsync(LlmRequest* llmRequest)
 {
+    TLLM_LOG_TRACE("%s start", __PRETTY_FUNCTION__);
     TLLM_CHECK(llmRequest && llmRequest->isContextOnlyRequest());
+
+    // If early responding was already started, just update state and signal
+    if (llmRequest->hasEarlyRespondingStarted())
+    {
+        llmRequest->setState(LlmRequestState::kDISAGG_CONTEXT_TRANS_IN_PROGRESS);
+        llmRequest->signalContextFinished();
+        TLLM_LOG_DEBUG("Signaling context finished for early response request %lu", llmRequest->mRequestId);
+        TLLM_LOG_TRACE("%s stop", __PRETTY_FUNCTION__);
+        return;
+    }
+
+    // Original implementation for non-early responding
     llmRequest->setState(LlmRequestState::kDISAGG_CONTEXT_TRANS_IN_PROGRESS);
-    // If context phase params is already set, it means that the KV cache
-    // transfer is already in progress.
     if (llmRequest->getContextPhaseParams().has_value())
     {
         if (llmRequest->getContextProgress() == nullptr)
@@ -252,6 +307,7 @@ void CacheTransceiver::respondAndSendAsync(LlmRequest* llmRequest)
     setContextState(llmRequest);
     auto future = mDataResponder->respondAndSendAsync(*llmRequest);
     mResponderFutures.emplace_back(llmRequest, std::move(future));
+    TLLM_LOG_TRACE("%s stop", __PRETTY_FUNCTION__);
 }
 
 void CacheTransceiver::respondAndSendLayerWise(
@@ -546,6 +602,24 @@ void CacheTransceiver::checkGenTransferStatus(std::optional<int> const& atLeastR
 bool CacheTransceiver::checkGenTransferComplete() const
 {
     return mRequesterFutures.empty();
+}
+
+bool CacheTransceiver::isEarlyRespondingEnabled() const
+{
+    // Check environment variable - cached for performance
+    static const bool enabled = []() {
+        const char* env = std::getenv("TLLM_EARLY_RESPONDING_ENABLED");
+        if (env != nullptr)
+        {
+            std::string value(env);
+            bool result = (value == "1" || value == "true" || value == "TRUE");
+            TLLM_LOG_INFO("Early responding %s via environment variable", result ? "enabled" : "disabled");
+            return result;
+        }
+        TLLM_LOG_DEBUG("Early responding disabled (env var not set)");
+        return false;
+    }();
+    return enabled;
 }
 
 } // namespace tensorrt_llm::batch_manager
