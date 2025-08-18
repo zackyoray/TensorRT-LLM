@@ -272,6 +272,12 @@ private:
     void executeStep(
         RequestVector const& contextRequests, RequestVector const& generationRequests, SizeType32 bufferId);
 
+    /// @brief Check if early responding is supported and enabled
+    bool isEarlyRespondingSupported() const;
+
+    /// @brief Helper to check if a request should check for context completion
+    bool shouldCheckContextComplete(LlmRequest const* llmReq) const;
+
     void debugIOTensors(RequestVector const& contextRequests, RequestVector const& generationRequests,
         TensorMap const& inputMap, TensorMap const& outputMap);
 

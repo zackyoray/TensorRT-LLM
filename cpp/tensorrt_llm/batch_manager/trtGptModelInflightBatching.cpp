@@ -914,13 +914,34 @@ void TrtGptModelInflightBatching::forwardSync()
             // If a context-only request is finished, send its KV cache and mark it.
             if (llmReq->isContextOnlyRequest() && llmReq->isContextFinished())
             {
-                // TODO: skip if sending layer-wise
+                TLLM_CHECK_WITH_INFO(mCacheTransceiver,
+                    "Disaggregated serving is not enabled, please check the configuration of "
+                    "cacheTransceiverConfig.");
+
+                // Skip if sending layer-wise (already handled)
+                if (llmReq->getContextProgress() != nullptr)
                 {
-                    TLLM_CHECK_WITH_INFO(mCacheTransceiver,
-                        "Disaggregated serving is not enabled, please check the configuration of "
-                        "cacheTransceiverConfig.");
-                    mCacheTransceiver->respondAndSendAsync(llmReq.get());
+                    TLLM_LOG_DEBUG("Skipping respondAndSendAsync for layer-wise request %lu",
+                                  llmReq->mRequestId);
                 }
+                else
+                {
+                    // For early responding requests, this will just signal completion
+                    // For normal requests, this starts the transfer
+                    mCacheTransceiver->respondAndSendAsync(llmReq.get());
+
+                    if (llmReq->hasEarlyRespondingStarted())
+                    {
+                        TLLM_LOG_DEBUG("Signaled context completion for early response request %lu",
+                                      llmReq->mRequestId);
+                    }
+                    else
+                    {
+                        TLLM_LOG_DEBUG("Started normal KV cache transfer for request %lu",
+                                      llmReq->mRequestId);
+                    }
+                }
+
                 mSeqSlotManager->freeSequenceSlot(llmReq->mRequestId);
             }
         }
@@ -1791,6 +1812,38 @@ void TrtGptModelInflightBatching::executeStep(
     }
 
     auto [optProfileId, inputMap, outputMap] = prepareBuffers(contextRequests, generationRequests, bufferId);
+
+    // NEW: Early responding for context-only requests
+    if (mCacheTransceiver && !contextRequests.empty())
+    {
+        TLLM_LOG_DEBUG("Checking %zu context requests for early responding eligibility",
+            contextRequests.size());
+        for (auto const& llmReq : contextRequests)
+        {
+            if (llmReq->isContextOnlyRequest() && llmReq->isLastContextChunk())
+            {
+                try
+                {
+                    // Start the responding process early (before GPU compute)
+                    mCacheTransceiver->respondAndSendAsyncEarly(llmReq.get());
+                    TLLM_LOG_DEBUG(
+                        "Started early responding for context request %lu", llmReq->mRequestId);
+                }
+                catch (std::exception const& e)
+                {
+                    TLLM_LOG_WARNING(
+                        "Failed to start early responding for request %lu: %s", llmReq->mRequestId, e.what());
+                    // Continue without early responding - graceful degradation
+                }
+            }
+            else if (!llmReq->isLastContextChunk())
+            {
+                TLLM_LOG_DEBUG(
+                    "Skipping early responding for partial context request %lu (chunk %d/%d)",
+                    llmReq->mRequestId, llmReq->getContextCurrentPosition(), llmReq->getContextChunkSize());
+            }
+        }
+    }
 
     if (mBuffers[bufferId]->transformerBuffers)
     {
@@ -2895,6 +2948,29 @@ void TrtGptModelInflightBatching::copyPromptTableToGpuInChunk(std::shared_ptr<Ll
     llmReq->mPtableCurrentPosition += outOfVocabTokens.size();
 
     TLLM_LOG_TRACE("%s stop", __PRETTY_FUNCTION__);
+}
+
+bool TrtGptModelInflightBatching::isEarlyRespondingSupported() const
+{
+    // Check all requirements for early responding
+    return mCacheTransceiver != nullptr &&  // Disaggregated serving enabled
+           !mModelConfig.useCrossAttention() &&  // Not encoder-decoder model
+           mWorldConfig.getTensorParallelism() == 1;  // Single GPU for POC
+
+    // TODO: Add support for:
+    // - Multi-GPU synchronization
+    // - Encoder-decoder models
+    // - Pipeline parallelism
+}
+
+bool TrtGptModelInflightBatching::shouldCheckContextComplete(LlmRequest const* llmReq) const
+{
+    // For early responding requests, only signal completion (don't send again)
+    // For normal requests, send KV cache when context completes
+    return llmReq &&
+           llmReq->isContextOnlyRequest() &&
+           llmReq->isLastContextChunk() &&
+           mCacheTransceiver != nullptr;
 }
 
 } // namespace tensorrt_llm::batch_manager
