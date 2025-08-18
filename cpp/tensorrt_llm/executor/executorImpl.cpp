@@ -906,8 +906,24 @@ std::vector<IdType> Executor::Impl::enqueueRequests(common::ArrayView<Request co
         auto now = std::chrono::steady_clock::now();
         for (auto const& req : requests)
         {
-            ids.emplace_back(generateReqId());
-            TLLM_LOG_DEBUG("Enqueue new request with id %d", ids.back());
+            // Check if this is a context-only request with a pre-assigned ctx_request_id (hot path)
+            IdType requestId;
+            auto contextPhaseParams = req.getContextPhaseParams();
+            if (contextPhaseParams.has_value() && 
+                req.getRequestType() == RequestType::REQUEST_TYPE_CONTEXT_ONLY &&
+                contextPhaseParams->getReqId() != 0)  // Check for valid pre-assigned ID
+            {
+                // Use the pre-assigned ID from the orchestrator (hot path)
+                requestId = contextPhaseParams->getReqId();
+                TLLM_LOG_DEBUG("Using pre-assigned ctx_request_id %d for hot path", requestId);
+            }
+            else
+            {
+                // Generate a new ID (cold path or normal requests)
+                requestId = generateReqId();
+                TLLM_LOG_DEBUG("Generated new request id %d", requestId);
+            }
+            ids.emplace_back(requestId);
 
             std::vector<IdType> childReqIds;
             auto numChildRequests = getNumChildRequests(req);
