@@ -46,8 +46,7 @@ class CachedOpaqueState:
     Stores the stable connection information (opaque state) from context servers
     to enable parallel execution of context and generation phases.
     """
-    opaque_state: str  # Base64 encoded opaque state
-    ctx_request_id: int  # Context request ID for generation server
+    opaque_state: str  # Base64 encoded opaque state (connection info only)
     timestamp: float  # Cache entry creation time
     hit_count: int = 0  # Number of cache hits for monitoring
     
@@ -104,13 +103,12 @@ class OpaqueStateCache:
             logger.debug(f"Removed expired cache entry for {ctx_server}")
         return None
     
-    def set(self, ctx_server: str, opaque_state: str, ctx_request_id: int):
+    def set(self, ctx_server: str, opaque_state: str):
         """Cache opaque state for a context server.
         
         Args:
             ctx_server: Context server URL
-            opaque_state: Base64 encoded opaque state
-            ctx_request_id: Context request ID
+            opaque_state: Base64 encoded opaque state (connection info only)
         """
         if not self._enabled:
             return
@@ -125,7 +123,6 @@ class OpaqueStateCache:
         
         self._cache[ctx_server] = CachedOpaqueState(
             opaque_state=opaque_state,
-            ctx_request_id=ctx_request_id,
             timestamp=time.time()
         )
         logger.info(f"Cached opaque state for {ctx_server}")
@@ -229,6 +226,9 @@ class OpenAIDisaggServer:
         cache_ttl = int(os.getenv("TRTLLM_OPAQUE_CACHE_TTL", "3600"))
         cache_max_entries = int(os.getenv("TRTLLM_OPAQUE_CACHE_MAX_ENTRIES", "1000"))
         self.opaque_cache = OpaqueStateCache(ttl_seconds=cache_ttl, max_entries=cache_max_entries)
+        
+        # Initialize request ID counter for hot path (same pattern as executor)
+        self._last_ctx_request_id = 1
 
         @asynccontextmanager
         async def lifespan(app: FastAPI):
@@ -558,10 +558,21 @@ class OpenAIDisaggServer:
         if gen_server is None:
             gen_server, _ = await self.gen_router.get_next_server(gen_req)
         
-        # Prepare generation request with cached opaque state
+        # Generate a fresh request ID using the same pattern as cold path
+        # In cold path, the context server generates IDs from its executor's counter
+        # We simulate this by using a simple incrementing counter
+        self._last_ctx_request_id = (self._last_ctx_request_id + 1) & ((1 << 64) - 1)
+        ctx_request_id = self._last_ctx_request_id
+        
+        # Set the request ID in the context request
+        if not hasattr(ctx_req, 'disaggregated_params') or ctx_req.disaggregated_params is None:
+            ctx_req.disaggregated_params = DisaggregatedParams()
+        ctx_req.disaggregated_params.ctx_request_id = ctx_request_id
+        
+        # Prepare generation request with cached opaque state and fresh request ID
         gen_req.disaggregated_params = DisaggregatedParams(
             request_type="generation_only",
-            ctx_request_id=cached_state.ctx_request_id,
+            ctx_request_id=ctx_request_id,  # Use fresh request ID
             encoded_opaque_state=cached_state.opaque_state,
             first_gen_tokens=None,  # Will be populated by context response if needed
             draft_tokens=None
@@ -627,8 +638,7 @@ class OpenAIDisaggServer:
             disagg_params = ctx_response.choices[0].disaggregated_params
             self.opaque_cache.set(
                 ctx_server,
-                disagg_params.encoded_opaque_state,
-                disagg_params.ctx_request_id
+                disagg_params.encoded_opaque_state
             )
             logger.debug(f"Cached opaque state for {ctx_server}")
         
