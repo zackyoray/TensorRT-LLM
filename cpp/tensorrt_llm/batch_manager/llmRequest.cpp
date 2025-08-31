@@ -312,17 +312,7 @@ void LlmRequest::validate(SizeType32 maxInputLen, SizeType32 maxSequenceLen, Siz
     }
 }
 
-void LlmRequest::resetEarlyRespondingState()
-{
-    // Reset all synchronization state for error recovery
-    mEarlyRespondingStarted.store(false, std::memory_order_release);
-    mContextComputeFinished.store(false, std::memory_order_release);
 
-    // Wake up any waiting threads before reset
-    mContextFinishedCv.notify_all();
-
-    TLLM_LOG_DEBUG("Request %lu: Early responding state reset", mRequestId);
-}
 
 std::shared_ptr<LlmRequest> LlmRequest::createChildRequest(RequestIdType requestId)
 {

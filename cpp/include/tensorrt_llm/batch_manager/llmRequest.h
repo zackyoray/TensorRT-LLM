@@ -34,6 +34,7 @@
 #include <memory>
 #include <mutex>
 #include <optional>
+#include <thread>
 #include <utility>
 #include <vector>
 
@@ -470,8 +471,102 @@ public:
         initialize(req.getInputTokenIds(), req.getOutputConfig().returnLogProbs);
     }
 
-    GenericLlmRequest(GenericLlmRequest&& request) = default;
-    GenericLlmRequest(GenericLlmRequest const& request) = default;
+    // Custom copy constructor - needed for createChildRequest
+    // Synchronization primitives are not copied but freshly initialized
+    GenericLlmRequest(const GenericLlmRequest& other)
+        : mRequestId(other.mRequestId)
+        , mPromptLen(other.mPromptLen)
+        , mMaxNewTokens(other.mMaxNewTokens)
+        , mSamplingConfig(other.mSamplingConfig)
+        , mEndId(other.mEndId)
+        , mPadId(other.mPadId)
+        , mSeqSlot(other.mSeqSlot)
+        , mLogitsPostProcessor(other.mLogitsPostProcessor)
+        , mApplyLogitsPostProcessorBatched(other.mApplyLogitsPostProcessorBatched)
+        , mClientId(other.mClientId)
+        , mMaskPosition(other.mMaskPosition)
+        , mState(other.mState)
+        , mPtableCurrentPosition(other.mPtableCurrentPosition)
+        // protected members
+        , mIsStreaming(other.mIsStreaming)
+        , mLastTokens(other.mLastTokens)
+        , mTokens(other.mTokens)
+        , mOrigPromptLen(other.mOrigPromptLen)
+        , mNumPreDecodedTokens(other.mNumPreDecodedTokens)
+        , mMaxSentTokenLen(other.mMaxSentTokenLen)
+        , mEmbeddingBias(other.mEmbeddingBias)
+        , mBadWordsList(other.mBadWordsList)
+        , mStopWordsList(other.mStopWordsList)
+        , mPositionIds(other.mPositionIds)
+        , mPromptEmbeddingTable(other.mPromptEmbeddingTable)
+        , mPromptVocabSize(other.mPromptVocabSize)
+        , mMultimodalHashes(other.mMultimodalHashes)
+        , mMultimodalPositions(other.mMultimodalPositions)
+        , mMultimodalLengths(other.mMultimodalLengths)
+        , mMultimodalEmbedding(other.mMultimodalEmbedding)
+        , mMropeRotaryCosSin(other.mMropeRotaryCosSin)
+        , mMropePositionDeltas(other.mMropePositionDeltas)
+        , mLoraTaskId(other.mLoraTaskId)
+        , mLoraWeights(other.mLoraWeights)
+        , mLoraConfig(other.mLoraConfig)
+        , mLookaheadConfig(other.mLookaheadConfig)
+        , mKvCacheRetentionConfig(other.mKvCacheRetentionConfig)
+        , mContextChunkSize(other.mContextChunkSize)
+        , mLogProbs(other.mLogProbs)
+        , mCumLogProbs(other.mCumLogProbs)
+        , mDraftTokens(other.mDraftTokens)
+        , mDraftLogits(other.mDraftLogits)
+        , mNumTokensPerIteration(other.mNumTokensPerIteration)
+        , mReturnAllGeneratedTokens(other.mReturnAllGeneratedTokens)
+        , mReturnContextLogits(other.mReturnContextLogits)
+        , mReturnGenerationLogits(other.mReturnGenerationLogits)
+        , mReturnLogProbs(other.mReturnLogProbs)
+        , mContextLogitsHost(other.mContextLogitsHost)
+        , mGenerationLogitsHost(other.mGenerationLogitsHost)
+        , mGenerationLogitsFragments(other.mGenerationLogitsFragments)
+        , mExcludeInputFromOutput(other.mExcludeInputFromOutput)
+        , mEncoderTokens(other.mEncoderTokens)
+        , mReturnEncoderOutput(other.mReturnEncoderOutput)
+        , mEncoderOutput(other.mEncoderOutput)
+        , mEncoderHiddenStates(other.mEncoderHiddenStates)
+        , mEncoderOutputHost(other.mEncoderOutputHost)
+        , mDecodingIter(other.mDecodingIter)
+        , mPriority(other.mPriority)
+        , mFinishReasons(other.mFinishReasons)
+        , mEncoderInputFeatures(other.mEncoderInputFeatures)
+        , mEncoderOutputLength(other.mEncoderOutputLength)
+        , mCrossAttentionMask(other.mCrossAttentionMask)
+        , mLlmRequestType(other.mLlmRequestType)
+        , mContextPhaseParams(other.mContextPhaseParams)
+        , mContextProgress(other.mContextProgress)
+        , mInputTokenExtraIds(other.mInputTokenExtraIds)
+        , mUniqueTokens(other.mUniqueTokens)
+        , mEncoderUniqueTokens(other.mEncoderUniqueTokens)
+        , mNumReturnSequences(other.mNumReturnSequences)
+        , mEagleConfig(other.mEagleConfig)
+        , mSequenceIndex(other.mSequenceIndex)
+        , mChildRequests(other.mChildRequests)
+        , mParentRequestId(other.mParentRequestId)
+        , mSequenceFinalVec(other.mSequenceFinalVec)
+        , mSkipCrossAttnBlocks(other.mSkipCrossAttnBlocks)
+        , mReturnPerfMetrics(other.mReturnPerfMetrics)
+        , mPerfMetrics(other.mPerfMetrics)
+        , mGuidedDecodingParams(other.mGuidedDecodingParams)
+        , mLanguageAdapterUid(other.mLanguageAdapterUid)
+        , mStartTime(other.mStartTime)
+        , mAllottedTimeMs(other.mAllottedTimeMs)
+        , mAdditionalContextOutputTensors(other.mAdditionalContextOutputTensors)
+        , mAdditionalGenerationOutputTensors(other.mAdditionalGenerationOutputTensors)
+        , mRequestedBlockHashes(other.mRequestedBlockHashes)
+        , mIsDummyRequest(other.mIsDummyRequest)
+        // Initialize synchronization primitives fresh (not copied)
+        , mEarlyRespondingStarted{false}
+        , mContextComputeFinished{false}
+    {
+    }
+
+    // Delete assignment operator
+    GenericLlmRequest& operator=(const GenericLlmRequest&) = delete;
 
     void setExcludeInputFromOutput(bool exclude)
     {
@@ -1617,44 +1712,59 @@ public:
     // Context completion signaling
     void signalContextFinished()
     {
-        {
-            std::lock_guard<std::mutex> lock(mContextFinishedMutex);
-            mContextComputeFinished.store(true, std::memory_order_release);
-        }
-        mContextFinishedCv.notify_all();
+        // TODO: For production, add proper mutex/condition variable for efficient waiting
+        // For POC, just use atomic flag
+        mContextComputeFinished.store(true, std::memory_order_release);
         TLLM_LOG_DEBUG("Request %lu: Context computation finished", mRequestId);
     }
 
     void waitForContextFinished()
     {
-        std::unique_lock<std::mutex> lock(mContextFinishedMutex);
-        mContextFinishedCv.wait(lock, [this] {
-            return mContextComputeFinished.load(std::memory_order_acquire);
-        });
+        // TODO: For production, use condition variable for efficient waiting
+        // For POC, just spin-wait on atomic flag
+        while (!mContextComputeFinished.load(std::memory_order_acquire))
+        {
+            // Small sleep to avoid burning CPU
+            std::this_thread::sleep_for(std::chrono::microseconds(100));
+        }
         TLLM_LOG_DEBUG("Request %lu: Context finish wait completed", mRequestId);
     }
 
     [[nodiscard]] bool waitForContextFinished(std::chrono::milliseconds timeout)
     {
-        std::unique_lock<std::mutex> lock(mContextFinishedMutex);
-        bool result = mContextFinishedCv.wait_for(lock, timeout, [this] {
-            return mContextComputeFinished.load(std::memory_order_acquire);
-        });
-        if (!result)
+        // TODO: For production, use condition variable with timeout
+        // For POC, spin-wait with timeout
+        auto start = std::chrono::steady_clock::now();
+        while (!mContextComputeFinished.load(std::memory_order_acquire))
         {
-            TLLM_LOG_WARNING("Request %lu: Timeout waiting for context completion after %lld ms",
-                mRequestId, static_cast<long long>(timeout.count()));
+            auto elapsed = std::chrono::steady_clock::now() - start;
+            if (elapsed >= timeout)
+            {
+                TLLM_LOG_WARNING("Request %lu: Timeout waiting for context completion after %lld ms",
+                    mRequestId, static_cast<long long>(timeout.count()));
+                return false;
+            }
+            std::this_thread::sleep_for(std::chrono::microseconds(100));
         }
-        return result;
+        return true;
     }
 
-    [[nodiscard]] bool isContextFinished() const
+    [[nodiscard]] bool isContextComputeFinished() const
     {
         return mContextComputeFinished.load(std::memory_order_acquire);
     }
 
     // Reset synchronization state (for error recovery)
-    void resetEarlyRespondingState();
+    void resetEarlyRespondingState()
+    {
+        // Reset all synchronization state for error recovery
+        mEarlyRespondingStarted.store(false, std::memory_order_release);
+        mContextComputeFinished.store(false, std::memory_order_release);
+
+        // TODO: For production with condition variables, wake up waiting threads
+
+        TLLM_LOG_DEBUG("Request %lu: Early responding state reset", mRequestId);
+    }
 
     /// Increment the counter of decoding iterations.
     void advanceDecodingIter()
@@ -2095,9 +2205,9 @@ protected:
 
     bool mUseDraftModel{false};
     // Early responding synchronization
+    // TODO: For production, add mutex/condition_variable for efficient waiting
+    // For POC, using only atomic flags (less efficient but simpler)
     std::atomic<bool> mEarlyRespondingStarted{false};
-    mutable std::mutex mContextFinishedMutex;
-    std::condition_variable mContextFinishedCv;
     std::atomic<bool> mContextComputeFinished{false};
 
 private:

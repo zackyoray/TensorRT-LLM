@@ -53,6 +53,7 @@ class BaseCacheTransceiver
 public:
     virtual ~BaseCacheTransceiver() = default;
     virtual void respondAndSendAsync(LlmRequest* llmRequest) = 0;
+    virtual void respondAndSendAsyncEarly(LlmRequest* llmRequest) = 0;  // For early responding POC
     virtual void respondAndSendLayerWise(
         RequestVector const& requests, std::shared_ptr<ContextProgress> const& progress)
         = 0;
@@ -94,7 +95,7 @@ public:
     void respondAndSendAsync(LlmRequest* llmRequest) override;
 
     /// @brief Start early responding before GPU computation completes
-    void respondAndSendAsyncEarly(LlmRequest* llmRequest);
+    void respondAndSendAsyncEarly(LlmRequest* llmRequest) override;
 
     void respondAndSendLayerWise(
         RequestVector const& requests, std::shared_ptr<ContextProgress> const& progress) override;

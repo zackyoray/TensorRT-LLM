@@ -244,7 +244,7 @@ private:
                         llmRequest->setRequestedBlockHashes(std::move(blockHashes));
 
                         // NEW: Wait for context to finish if early responding
-                        if (llmRequest->hasEarlyRespondingStarted() && !llmRequest->isContextFinished())
+                        if (llmRequest->hasEarlyRespondingStarted() && !llmRequest->isContextComputeFinished())
                         {
                             TLLM_LOG_DEBUG("DataResponder: Waiting for context completion for request %lu",
                                 llmRequest->mRequestId);

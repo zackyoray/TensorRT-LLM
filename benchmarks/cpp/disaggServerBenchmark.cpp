@@ -16,6 +16,7 @@
  */
 
 #include "tensorrt_llm/common/assert.h"
+#include "tensorrt_llm/common/envUtils.h"
 #include "tensorrt_llm/common/logger.h"
 #include "tensorrt_llm/executor/disaggServerUtil.h"
 #include "tensorrt_llm/executor/executor.h"
@@ -636,8 +637,13 @@ public:
                                                                                 : texec::DecodingMode::Auto(),
                     benchmarkParams.executorLookaheadConfig, benchmarkParams.medusaChoices));
             executorConfig.setExtendedRuntimePerfKnobConfig(extendedRuntimePerfKnobConfig);
+            // Calculate maxTokensInBuffer based on environment variable
+            size_t bufferSizeBytes = tensorrt_llm::common::getEnvMemSizeForKVCacheTransferBuffer();
+            // Estimate tokens based on typical KV cache size per token (adjust as needed)
+            // For example, assuming ~1KB per token for a typical model
+            size_t maxTokensInBuffer = bufferSizeBytes / 1024;  // Adjust divisor based on your model
             executorConfig.setCacheTransceiverConfig(
-                texec::CacheTransceiverConfig(texec::CacheTransceiverConfig::BackendType::DEFAULT));
+                texec::CacheTransceiverConfig(texec::CacheTransceiverConfig::BackendType::DEFAULT, maxTokensInBuffer));
             constexpr int maxIterationsForRequestStats = 1000;
             if (mEnableCollectKvCacheTransferTime)
             {
