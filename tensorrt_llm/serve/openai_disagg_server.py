@@ -75,7 +75,7 @@ class OpaqueStateCache:
         self._cache: Dict[str, CachedOpaqueState] = {}
         self._ttl_seconds = ttl_seconds
         self._max_entries = max_entries
-        self._enabled = os.getenv("TRTLLM_HOT_PATH_ENABLED", "0") == "1"
+        self._enabled = os.getenv("TRTLLM_HOT_PATH_ENABLED", "1") == "1"
         
         if self._enabled:
             logger.info(f"Hot path enabled with opaque state cache (TTL: {ttl_seconds}s, max entries: {max_entries})")
@@ -493,7 +493,7 @@ class OpenAIDisaggServer:
                     first_gen_tokens=[7],
                     ctx_request_id=1,
                     encoded_opaque_state=None,
-                    draft_tokens=None)
+                    draft_tokens=[])
                 # Since KV cache for prompt tokens will be uninitialized, need to ignore eos
                 req.ignore_eos = True
             else:
@@ -566,16 +566,18 @@ class OpenAIDisaggServer:
         
         # Set the request ID in the context request
         if not hasattr(ctx_req, 'disaggregated_params') or ctx_req.disaggregated_params is None:
-            ctx_req.disaggregated_params = DisaggregatedParams()
+            ctx_req.disaggregated_params = DisaggregatedParams(
+                request_type="context_only"
+            )
         ctx_req.disaggregated_params.ctx_request_id = ctx_request_id
         
         # Prepare generation request with cached opaque state and fresh request ID
         gen_req.disaggregated_params = DisaggregatedParams(
             request_type="generation_only",
             ctx_request_id=ctx_request_id,  # Use fresh request ID
-            encoded_opaque_state=cached_state.opaque_state,
-            first_gen_tokens=None,  # Will be populated by context response if needed
-            draft_tokens=None
+            encoded_opaque_state=cached_state.opaque_state,  # Already base64 encoded
+            first_gen_tokens=[7],  # Will be populated by context response if needed
+            draft_tokens=[]
         )
         
         try:
